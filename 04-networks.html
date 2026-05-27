@@ -663,6 +663,62 @@ A                  B                 A                  B
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Concepts, principles, architectures</dt>
+<dd>A <strong>network</strong> is a group of computers and devices connected by communication channels, enabling user communication and resource sharing. <strong>Connection-oriented</strong> networks reserve capacity per communication (old telephony, integrated-services QoS); <strong>connection-less / packet-switched</strong> networks share capacity (the Internet, differentiated-services QoS). <strong>Protocols</strong> define syntax (message format) and semantics (message meaning). <strong>Architectures</strong>: client-server (client initiates, server responds) vs peer-to-peer (every node is both). Routing is hop-by-hop using <strong>longest CIDR prefix match</strong>.</dd>
+
+<dt>ISO/OSI and TCP/IP model</dt>
+<dd>OSI = 7 layers, theoretical reference: <strong>P</strong>hysical → <strong>D</strong>ata link → <strong>N</strong>etwork → <strong>T</strong>ransport → <strong>S</strong>ession → <strong>P</strong>resentation → <strong>A</strong>pplication. TCP/IP = 4 layers, the de-facto Internet model: <strong>Network access</strong> (= physical + data-link) → <strong>Internet</strong> (= network, IP) → <strong>Transport</strong> (TCP/UDP) → <strong>Application</strong> (HTTP/DNS/SMTP/&hellip;). Data flows down with each layer adding a header (encapsulation) and back up by stripping them.</dd>
+
+<dt>IP protocol</dt>
+<dd><strong>Internet Protocol</strong> — delivers <em>datagrams</em> host-to-host across multiple networks. <strong>Best-effort</strong> service (no delivery guarantee, no ordering, no error correction — those are up to higher layers). Connectionless, packet-switched. Adds source/dest IP, TTL, protocol number, fragmentation info. Supported by <strong>ICMP</strong> (status, errors — ping, "unreachable"), <strong>IGMP</strong> (multicast group management), <strong>ARP/RARP</strong> (IP ↔ MAC).</dd>
+
+<dt>TCP (transport protocols)</dt>
+<dd>Reliable, connection-oriented, ordered, byte-stream protocol. Connection established with the <strong>3-way handshake</strong> (SYN → SYN+ACK → ACK). Uses <strong>sequence numbers</strong> and <strong>ACKs</strong> for reliability and ordering, with retransmission on loss. Flow control via <strong>window size</strong> (receiver advertises buffer space). <strong>Congestion control</strong> varies the sending rate (exponential ramp-up, linear after threshold, drop on loss — variants Tahoe, Reno, CUBIC). Doesn't support multicast. Used by HTTP, SMTP, SSH, anything that can't tolerate loss.</dd>
+
+<dt>UDP (transport protocols)</dt>
+<dd>Simple, connectionless, best-effort, unordered datagram protocol. Header is just 8 bytes (source port, dest port, length, checksum) — minimal overhead. No retransmission, no flow control, no congestion control. Used where latency matters more than completeness: DNS, NTP, video calls, games, IoT telemetry, multicast / broadcast. QUIC (HTTP/3) is built on UDP because it bypasses TCP's head-of-line blocking.</dd>
+
+<dt>Network layer protocols</dt>
+<dd>At the network layer: <strong>IP</strong> (IPv4, IPv6), <strong>ICMP/ICMPv6</strong>, <strong>IGMP</strong>, <strong>ARP/RARP</strong>. Routing protocols on top:
+  <ul>
+    <li><strong>Distance Vector — RIP</strong>: "I tell my neighbours everything I know"; Bellman-Ford; small networks.</li>
+    <li><strong>Link State — OSPF</strong>: "I tell everyone about my neighbours"; Dijkstra; each router computes its own table; large networks; cost based on bandwidth.</li>
+    <li><strong>Path Vector — BGP</strong>: distance vector but exchanges full path descriptions; supports policies; routing between autonomous systems on the Internet.</li>
+  </ul>
+Memorize: <strong>RIP → DV, OSPF → LS, BGP → PV</strong>.</dd>
+
+<dt>IPv4 features</dt>
+<dd>32-bit addresses (0.0.0.0–255.255.255.255 ≈ 4 billion). Address types: <strong>unicast, broadcast, multicast</strong>. Header includes version, TTL (decremented every hop, dropped at 0 — kills strays), protocol number (TCP/UDP/ICMP), header checksum, source/dest IP, options. Supports <strong>fragmentation</strong> by routers if a link's MTU is too small. Originally divided into classes; today uses <strong>CIDR</strong> (e.g. <code>10.0.0.0/8</code>) for efficient subnetting. Address exhaustion mitigated by <strong>NAT</strong> and <strong>RFC 1918</strong> private ranges (10/8, 172.16/12, 192.168/16).</dd>
+
+<dt>Advanced IPv6 features</dt>
+<dd>128-bit addresses (effectively unlimited), with shortcut notation (drop leading zeros, <code>::</code> for one run of zeros). Improvements over IPv4: <strong>IPSec mandatory</strong>; simpler header (no checksum, no options, no in-path fragmentation — sender does Path MTU Discovery); <strong>flow labels</strong> for QoS; <strong>auto-configuration</strong> via SLAAC (no DHCP needed) using <strong>Neighbour Discovery Protocol</strong> (replaces ARP); <strong>anycast</strong> support; <strong>mobility</strong> (Home Agent); no broadcast — replaced by multicast groups (<code>ff02::1</code> = all-nodes); built-in security. Transition: dual-stack apps; tunneling (IPv6-in-IPv4); NAT64.</dd>
+
+<dt>Peer-to-peer (P2P) networks</dt>
+<dd>System of equal-level peers; each is both client and server. Pros over C-S: <strong>scalability</strong> (capacity grows with users), <strong>decentralization</strong> (no SPOF), shared compute, self-organization. Cons: harder consistency, harder security/authenticity, volatile topology. Examples: BitTorrent, Folding@home, Cassandra, blockchain. <strong>Peer discovery</strong>: static list, central registry, gossip. <strong>Service discovery</strong>: flooding (unstructured), DHT (structured), hybrid. Overlay topologies: random mesh, layers, grid.</dd>
+
+<dt>Ad-hoc / sensor networks</dt>
+<dd><strong>Ad-hoc</strong> — no pre-existing infrastructure; each participant is also a router; high topology dynamics and mobility (vs P2P). Need specialized protocols; routing can be address-based or data-centric (subscribers express interest). E.g. autonomous-vehicle communication, emergency networks. <strong>Sensor networks</strong> — battery-powered nodes with a sensor + radio + tiny CPU. Key constraints: <strong>energy efficiency</strong>, limited compute/memory, limited bandwidth, periodic sleep, multi-hop. E.g. wildlife tracking, fire/earthquake detection, smart agriculture, building HVAC.</dd>
+
+<dt>High-speed networks</dt>
+<dd>Networks engineered for very high throughput / low latency: <strong>Gigabit/10/40/100/400 GbE</strong> (data centres); <strong>InfiniBand</strong> (HPC clusters, low latency); <strong>DWDM</strong> optical networks (many wavelengths on one fibre — Internet backbone); <strong>5G</strong> (low-latency slices for IoT/vehicles); <strong>RDMA / RoCE</strong> (CPU-bypass data transfer); <strong>QUIC / HTTP/3</strong> (multiplexed, 0-RTT handshake on UDP). Recurring techniques: reduce per-byte overhead (HW offload, kernel bypass) and parallelize (many lanes/streams).</dd>
+
+<dt>Computer networks and multimedia</dt>
+<dd>Multimedia = data combining text/audio/video/images. Network requirements: <strong>delay</strong> &lt; 100–200 ms for interactivity (= processing + transmission + propagation + queuing delays); minimal <strong>jitter</strong> (variation in delay). Real-time uses <strong>UDP</strong> (no retransmit) + <strong>FEC</strong> (forward error correction) or estimation of lost frames. <strong>Interleaving</strong> spreads loss across frames so one drop affects many slightly. Use <strong>multicast</strong> for one-to-many streams (or a reflector when the network lacks multicast). Compression matters: text → GZIP (Huffman+LZ77), audio → MP3/AAC, video → H.264/265/AV1.</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>Type <code>https://example.com</code>: <em>DNS</em> resolves over UDP → <em>TCP 3-way handshake</em> to port 443 → <em>TLS handshake</em> negotiates key → <em>HTTP/2 multiplexed</em> over TCP (or HTTP/3 over QUIC over UDP) → packets traverse many <em>BGP</em> hops between ISPs at the network layer → each hop is <em>Ethernet/Wi-Fi</em> at the data-link layer. CDN cache may answer instead of origin; CloudFront's anycast directs to nearest PoP; WAF inspects HTTP.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Source for FROM REPO blocks: <a href="../6_pocitacove_site.md">6_pocitacove_site.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
 </div>

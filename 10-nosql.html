@@ -794,6 +794,89 @@ RETURN p
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Principles of NoSQL databases</dt>
+<dd>NoSQL ("Not Only SQL") emerged from late-2000s web-scale needs (Amazon Dynamo paper, 2007). Database technologies that are (mostly): <strong>not relational</strong>, <strong>designed for horizontal scale</strong> on commodity clusters, <strong>schema-less</strong> (fields freely added per record), <strong>open source</strong>. Four NoSQL properties: good scalability (horizontal not vertical), dynamic schema, efficient reading (spend more on writes to keep related data together), low cost (commodity HW). Challenges: maturity, fewer experts, weaker professional support, less standardized data access language. The single biggest conceptual shift from SQL: <strong>aggregate data model</strong> — designed around the access pattern, not the universal data structure.</dd>
+
+<dt>Taxonomy of NoSQL databases</dt>
+<dd>Four canonical families:
+  <ol>
+    <li><strong>Key-value stores</strong> — opaque values keyed by ID. Simplest, fastest lookups. Redis, DynamoDB, Riak, Memcached.</li>
+    <li><strong>Document databases</strong> — JSON/BSON documents in collections; queryable by fields, with indexes. MongoDB, Couchbase, Firestore.</li>
+    <li><strong>Column-family stores</strong> — rows have many sparse columns grouped into families; data model tuned for time-series and write-heavy workloads. Cassandra, HBase, BigTable.</li>
+    <li><strong>Graph databases</strong> — first-class nodes and edges with properties; fast traversal of relationships. Neo4j, JanusGraph, Neptune.</li>
+  </ol>
+First three are <strong>aggregate-oriented</strong> (good for sharding); graph isn't (hard to partition a dense graph). Adjacent categories: time-series (InfluxDB), search engines (Elasticsearch), vector DBs (Pinecone), multi-model (Cosmos DB, ArangoDB), NewSQL (Spanner, CockroachDB).</dd>
+
+<dt>Distributed databases</dt>
+<dd>NoSQL DBs are typically distributed for scale + availability + locality. Two basic mechanisms:
+  <ul>
+    <li><strong>Sharding</strong> (data partitioning) — different chunks on different nodes. Goals: keep co-accessed data together (aggregates help), balance load, consider physical location. Many NoSQL DBs auto-shard.</li>
+    <li><strong>Replication</strong> — same data copied to multiple nodes. Patterns:
+      <ul>
+        <li><em>Master-slave</em> — one writer, many read-only replicas. Scales reads; master is SPOF until failover.</li>
+        <li><em>Peer-to-peer</em> — every node accepts writes and spreads them. No master; needs conflict resolution.</li>
+      </ul>
+    </li>
+  </ul>
+Common combination: sharding + P2P replication with replication factor 3 (Cassandra default). Sharding alone makes each shard a SPOF.</dd>
+
+<dt>Ensuring consistency</dt>
+<dd>Distributed systems can't have all of <strong>Consistency, Availability, Partition tolerance</strong> (<strong>CAP theorem</strong>, Brewer 2000 / proved Gilbert &amp; Lynch 2002). Practically, a distributed system <em>must</em> tolerate partitions, so the real trade-off is C vs A. Three conflict types:
+  <ul>
+    <li><strong>Write-write</strong> — two simultaneous updates. Fix: pessimistic locks or optimistic versioning (version stamps, vector clocks).</li>
+    <li><strong>Read-write</strong> — read in the middle of someone's writes. Ideal fix: ACID transactions. NoSQL typically supports atomic writes only within a single aggregate → inconsistency window across aggregates.</li>
+    <li><strong>Replication</strong> — same value differs across replicas. Fixes: eventual consistency, <strong>quorum</strong> (R + W &gt; N for strong reads; W &gt; N/2 for write consistency — classic N=3, W=2, R=2). Read-your-writes via sticky sessions.</li>
+  </ul>
+Operating philosophy: <strong>BASE</strong> instead of ACID — Basically Available, Soft state, Eventually consistent.</dd>
+
+<dt>Architecture of key-value stores</dt>
+<dd>A simple hash map. All accesses by primary key. Operations: <code>put(k, v)</code>, <code>get(k)</code>, <code>delete(k)</code>. Values are opaque blobs (or JSON, which unlocks extra functionality). Keys can be user-provided (natural), generated, or time-derived; often expire. Keys grouped into <strong>buckets / namespaces</strong> for logical separation.
+  <strong>Distributed design</strong> (Amazon Dynamo paper):
+  <ul>
+    <li><strong>Consistent hashing</strong> for partitioning (auto-shard, minimal data movement on node join/leave).</li>
+    <li><strong>Virtual nodes</strong> for balanced load.</li>
+    <li><strong>Vector clocks / version stamps</strong> for replica consistency.</li>
+    <li><strong>Gossip protocol</strong> for membership/liveness (no central registry).</li>
+    <li><strong>2PC or MVCC</strong> for transactions.</li>
+  </ul>
+Representatives: <strong>Redis</strong> (in-memory, blazing fast, cache/sessions/leaderboards), <strong>DynamoDB</strong> (AWS managed, unlimited scale), <strong>Riak</strong>, <strong>Voldemort</strong>, <strong>Memcached</strong> (pure cache, no persistence). Querying limit: only by key — secondary indexes require extra functionality (Riak Search).</dd>
+
+<dt>Architecture of document databases</dt>
+<dd>Stores self-describing hierarchical documents (JSON/BSON/XML). Documents in a <strong>collection</strong> are similar but may differ in schema. Indexes on chosen fields make sub-document querying fast. Why preferred over KV: queryable by field. Why preferred over relational: closer to in-memory objects → <em>Object-Document Mapping</em> is faster &amp; simpler than ORM; no joins needed; schema can evolve per document.
+  Representatives: <strong>MongoDB</strong> (the canonical), <strong>Couchbase</strong>, <strong>Amazon DocumentDB</strong> (Mongo API on AWS), <strong>Firestore</strong> (Google), <strong>Cosmos DB</strong> (multi-API). Common features: replication + automatic failover, eventual consistency, indexes (including compound, geospatial, text), aggregation pipelines, since recent versions multi-document ACID transactions (with perf cost).</dd>
+
+<dt>Architecture of column-family stores</dt>
+<dd>Also called wide-column or columnar (not to be confused with column-oriented RDBMS). Data model: <strong>rows</strong> have a row key and many columns; <strong>columns</strong> are grouped into <strong>column families</strong> (data accessed together — e.g. one CF for profile, another for orders). A column is a 3-tuple (name, value, timestamp). Columns can be added to any row without affecting other rows — perfect for sparse data. <strong>Super columns</strong> (Cassandra 1.0) allowed nesting one level (modern CQL3 replaced this with table-like syntax).
+  Representatives: <strong>Google BigTable</strong> (the original), <strong>Apache Cassandra</strong> (open source, peer-to-peer, RF=3, CQL query language, tunable consistency per query), <strong>Apache HBase</strong> (on HDFS), <strong>ScyllaDB</strong> (Cassandra-compatible, C++ for performance), <strong>AWS Keyspaces</strong> (managed Cassandra). Best fit: write-heavy, time-series, IoT, event logs at massive scale.</dd>
+
+<dt>Architecture of graph databases</dt>
+<dd>First-class <strong>nodes</strong> (entities with properties) and <strong>edges</strong> (directional relationships with types and properties). Designed for relationship-heavy queries that are painful self-joins in SQL. Stored internally with <strong>adjacency lists</strong> (sparse-graph efficient) rather than adjacency matrices (O(n²)). Graph theory primer used in lectures: G = (V, E), basic ops are neighbour lookup, connectivity check, structure update; data structures include adjacency matrix, adjacency list, incidence matrix, Laplacian matrix.
+  Representatives: <strong>Neo4j</strong> (transactional, Cypher query language, the canonical), <strong>JanusGraph</strong> (distributed, backed by Cassandra/HBase), <strong>Amazon Neptune</strong> (managed, Gremlin + SPARQL), <strong>ArangoDB</strong> (multi-model). Best fit: social networks, fraud detection (rings of transactions), recommendation, knowledge graphs, supply chains, identity graphs. Worst fit: tabular analytics; massive write throughput (graphs are hard to shard).</dd>
+
+<dt>Basic characteristics of the main representatives</dt>
+<dd>One-liner per family:
+  <ul>
+    <li><strong>Redis</strong> (KV) — in-memory, single-threaded core, supports pub/sub + sorted sets + streams; default for cache, sessions, leaderboards, rate limiting.</li>
+    <li><strong>DynamoDB</strong> (KV / document) — AWS managed, unlimited scale, single-digit-ms latency, tunable consistency, fully serverless billing.</li>
+    <li><strong>MongoDB</strong> (document) — JSON/BSON, replica sets with automatic failover, sharding by shard key, since 4.0 has multi-document ACID transactions, aggregation pipelines.</li>
+    <li><strong>Cassandra</strong> (column-family) — masterless peer-to-peer, tunable per-query consistency (ALL/QUORUM/ONE), CQL, time-series &amp; write-heavy workloads, the canonical Dynamo-style store.</li>
+    <li><strong>Neo4j</strong> (graph) — ACID, Cypher, transactional, native graph storage, free Community Edition. Best of breed for relationship queries.</li>
+  </ul></dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>A realistic <strong>polyglot persistence</strong> stack: Postgres for the orders write model (ACID required); <strong>Redis</strong> for sessions, rate-limiting, and a read-through cache in front of Postgres; <strong>MongoDB</strong> for the product catalog (variable attributes per product); <strong>Cassandra</strong> for event audit logs and time-series telemetry; <strong>Neo4j</strong> for the recommendation engine ("customers who bought X also bought Y"); Elasticsearch for full-text search; S3 for blobs. Each chosen because its data model fits the access pattern. Combine them with eventual-consistency event streams over Kafka. Sadalage &amp; Fowler: "<em>different data stores under different circumstances.</em>"</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Sources: <code>materialy/PA195</code> (Novák &amp; Dohnal lectures, MUNI) &mdash; Lecture 1 (Why NoSQL, Overview), Lecture 3 (Principles: data model, distribution, consistency), Lecture 4 (Key-value), Lecture 6 (Document), Lecture 7 (Column-family), Lecture 8 (Graph). Primary academic references: Sadalage &amp; Fowler "NoSQL Distilled" (2012); Holubová, Kosek, Minařík, Novák "Big Data a NoSQL databáze" (2015).
 </div>

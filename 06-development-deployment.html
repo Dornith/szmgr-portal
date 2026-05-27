@@ -833,6 +833,92 @@ SELECT e FROM Employee e JOIN FETCH e.skills WHERE e.id = :id
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Tools and environments for the development and deployment of large-scale software systems</dt>
+<dd>A typical stack covers the full SDLC:
+  <ul>
+    <li><strong>Editor/IDE</strong> — IntelliJ, VS Code (Language Server Protocol = consistent tooling across editors).</li>
+    <li><strong>Version control</strong> — Git on GitLab/GitHub (also issue tracking + CI/CD on the same platform).</li>
+    <li><strong>Build</strong> — Maven / Gradle (JVM), npm / pnpm (JS), Cargo (Rust).</li>
+    <li><strong>Testing</strong> — JUnit + Mockito + Testcontainers; Playwright for UI; Postman/Insomnia for ad-hoc APIs.</li>
+    <li><strong>CI/CD</strong> — Jenkins, GitLab CI/CD.</li>
+    <li><strong>Containers</strong> — Docker / Podman; orchestration via Kubernetes (EKS) or ECS.</li>
+    <li><strong>IaC</strong> — Terraform.</li>
+    <li><strong>Observability</strong> — Grafana + Prometheus, ELK / OpenSearch, OpenTelemetry → Jaeger / X-Ray.</li>
+    <li><strong>Quality</strong> — SonarQube, Checkstyle/SpotBugs, ESLint, tfsec/checkov for IaC.</li>
+    <li><strong>Secrets</strong> — HashiCorp Vault / AWS Secrets Manager.</li>
+  </ul>
+The underlying motivation is to fight <strong>Lehman's laws</strong> (rising complexity, declining quality, continuing change) with automation.</dd>
+
+<dt>Basic concepts of software architectures in terms of implementation and long-term maintenance</dt>
+<dd>The set of architectural choices, ordered by independence/distribution:
+  <ul>
+    <li><strong>Monolith</strong> — one deploy; simple, fast to start, but every change rebuilds everything; ageing monoliths become unmaintainable.</li>
+    <li><strong>Layered</strong> — Presentation / Business / Persistence / Database; standard monolith refinement.</li>
+    <li><strong>Microkernel / Hexagonal / Ports &amp; Adapters</strong> — core + plug-ins through stable interfaces; great for extensibility (VS Code, Jakarta Beans).</li>
+    <li><strong>Pipeline</strong> — sequential stateless filters (compilers, unix pipes).</li>
+    <li><strong>MVC/MVP/MVVM</strong> — UI patterns separating model, view, and the mediating piece.</li>
+    <li><strong>SOA</strong> — 4–12 services, often shared DB, ACID possible.</li>
+    <li><strong>Microservices</strong> — many small services, no shared DB, polyglot allowed, eventual consistency.</li>
+    <li><strong>Modular monolith</strong> — pragmatic middle ground; one deploy, internal module boundaries.</li>
+  </ul>
+For long-term maintenance the key principles are <strong>IoC / DI</strong> (Spring's hallmark) for swappable parts, <strong>AOP</strong> for cross-cutting concerns, <strong>SOLID</strong> for cohesion + coupling, and a clear API contract per component.</dd>
+
+<dt>Technologies supporting continuous integration and deployment (CI/CD)</dt>
+<dd>CI = integrate code in main as fast as possible with automated unit tests on every push. CD = automated delivery up to (or including) production. Pipeline anatomy: <strong>runner</strong> executes <strong>jobs</strong> grouped into <strong>stages</strong>. Build a Docker image, run tests in containers (Docker-in-Docker), push to a registry, deploy via Terraform/CodeDeploy.
+  <ul>
+    <li><strong>GitLab CI</strong> — <code>.gitlab-ci.yml</code> in repo; jobs in stages run in parallel; runners are shared or dedicated; secrets as CI variables; deploy to review/staging/production environments.</li>
+    <li><strong>Jenkins</strong> — <code>Jenkinsfile</code> in repo (declarative or scripted Groovy); stages with parallel blocks; agents in cloud or self-hosted; Credentials plugin for secrets; <code>input</code> step for manual approvals.</li>
+  </ul>
+Branching: feature-branch + PR review is the de-facto default; Gitflow for release-based products. <strong>OWASP CI/CD Top 10</strong> security risks: insufficient flow control, weak IAM, dependency chain abuse, poisoned pipeline execution, weak PBAC, credential hygiene, insecure config, ungoverned 3rd-party services, artifact integrity, insufficient logging.</dd>
+
+<dt>Choosing the appropriate programming language</dt>
+<dd>Trade-offs to balance:
+  <ul>
+    <li><strong>Problem fit</strong> — what is the language designed for? (Python for data, Java/Kotlin/C# for enterprise, Go for cloud-native services, Rust for systems perf+safety, JS/TS for frontend.)</li>
+    <li><strong>Team familiarity</strong> — the best language your team doesn't know is worse than the OK one they do.</li>
+    <li><strong>Ecosystem</strong> — libraries, frameworks, long-term security maintenance.</li>
+    <li><strong>Performance / footprint</strong> — Lambda cold starts, RAM costs, throughput.</li>
+    <li><strong>Type system</strong> — static catches bugs at compile time and helps large refactors; dynamic is faster to prototype.</li>
+    <li><strong>Tooling</strong> — build, IDE, profilers, debuggers.</li>
+    <li><strong>Hiring &amp; org standards</strong> — exotic languages limit your hiring pool; consistency with the rest of the org is operationally valuable.</li>
+  </ul>
+Default picks in 2026: Java/Kotlin/C# for "boring enterprise" backends; Go for cloud-native services and CLIs; Rust for performance-critical / system code; Python for data &amp; ML; TypeScript for frontend.</dd>
+
+<dt>Persistence</dt>
+<dd>Retaining data between application runs / restarts / requests. Options:
+  <ul>
+    <li><strong>Relational DBs</strong> (Postgres, MySQL) — structured, ACID, mature.</li>
+    <li><strong>ORM</strong> — maps your object model to relational tables (see next).</li>
+    <li><strong>Filesystem</strong> — blobs (PDFs, images).</li>
+    <li><strong>NoSQL</strong> (Mongo, Cassandra) — flexible schema, horizontal scale.</li>
+    <li><strong>Caching</strong> (Redis) — speed at the cost of staleness.</li>
+  </ul>
+Patterns: <strong>DAO/Repository</strong> (abstract DB access — swap implementations, mock for tests), <strong>DTO</strong> (data transfer between layers — don't return entities from APIs), <strong>CQRS</strong> (separate read &amp; write models). Schema changes via <strong>Flyway/Liquibase</strong> with expand/contract for zero downtime; never <code>hbm2ddl.auto=update</code> in production.</dd>
+
+<dt>ORM</dt>
+<dd>Object-Relational Mapping — maps OO classes to RDBMS tables. Lets you write Java/Kotlin/C# instead of raw SQL; code becomes DB-agnostic; simplifies joins.
+  <ul>
+    <li>Java standard: <strong>JPA</strong> spec (Jakarta Persistence), <strong>Hibernate</strong> is the de-facto implementation.</li>
+    <li>Key concepts: <strong>Entity</strong> (<code>@Entity</code>, <code>@Id</code>), <strong>EntityManager</strong> (per-request, not thread-safe) vs <strong>EntityManagerFactory</strong> (app-scoped), <strong>Persistence Context</strong> (set of managed entities, dirty-tracking, identity), entity states (transient, managed, detached, removed), <strong>cascading</strong>, <strong>fetch types</strong> LAZY/EAGER.</li>
+    <li>Query language: <strong>JPQL</strong> (entity-aware) or <strong>Criteria API</strong> (type-safe).</li>
+    <li>Pros: clean code, less duplication, easier DB switches. <strong>Cons</strong>: opaque generated SQL, complex bugs (equals/hashCode, cascading), the <strong>N+1 problem</strong> (lazy loading inside a loop fires one query per element — mitigate with <code>JOIN FETCH</code> or DTO projections), performance tuning is non-trivial.</li>
+  </ul>
+Other languages: Entity Framework Core (.NET), SQLAlchemy (Python), Prisma / TypeORM / Drizzle (Node), GORM (Go), Diesel / SQLx (Rust). Modern trend: <strong>compile-time-checked SQL</strong> (jOOQ, sqlc, SQLx) as a middle ground.</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>End-to-end on a Java/Spring service: <em>tools</em> — IntelliJ, Maven, GitLab. <em>Architecture</em> — Spring Boot microservice with IoC/DI via <code>@Component/@Service/@Repository</code>, OpenAPI for the REST contract. <em>Persistence</em> — JPA/Hibernate with HikariCP connection pool, Flyway migrations, Testcontainers Postgres in integration tests. <em>CI/CD</em> — GitLab pipeline: <code>build</code> → <code>test</code> (JaCoCo + SonarQube quality gate) → <code>image</code> (push to ECR) → <code>review</code> (ephemeral env per MR) → <code>main</code> branch promotes to staging via Terraform, manual gate to prod. <em>Language</em> — Java for the service, TypeScript for the UI, Terraform for infra.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Sources: <a href="../1_programovani_a_softwarovy_vyvoj.md">1_programovani_a_softwarovy_vyvoj.md</a> + <code>materialy/PA165</code> (Lect01 Intro, Lect02 Spring, Lect06 Microservices, Lect07-08 Persistence, Lect09 CI/CD). <span class="tag from-repo">FROM REPO</span> = szmgr .md; <span class="tag lectures">FROM LECTURES</span> = PA165 slides; <span class="tag added">ADDED</span> = mine.
 </div>

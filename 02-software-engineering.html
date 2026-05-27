@@ -604,6 +604,47 @@ Requirements       ────────────────       Accept
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Software life cycle</dt>
+<dd>The sequence of phases a piece of software goes through from idea to retirement: <strong>analysis → design → implementation → testing → operation (incl. deployment) → maintenance</strong>. Concrete models differ in <em>how</em> they slice the work to manage risk and feedback. Models: <strong>waterfall</strong> (strict sequential), <strong>incremental</strong> (deliver in priority-ordered increments), <strong>spiral</strong> (iterative + heavy risk analysis), <strong>prototyping</strong>, <strong>V-model</strong> (waterfall paired with testing levels), <strong>code-and-fix</strong> (don't).</dd>
+
+<dt>Software development process</dt>
+<dd>The actual workflow a team uses to build software — usually a chosen life-cycle model + supporting practices. The choice depends on requirement stability, customer involvement, team size, regulatory needs. Predictive processes (RUP) suit fixed requirements; agile processes (Scrum, XP, Kanban) suit changing requirements and tight feedback loops.</dd>
+
+<dt>Software development management</dt>
+<dd>The discipline of running development to schedule, cost, scope, and quality. Independent of the chosen model: requires <strong>communication</strong> (regular, defined), a <strong>ubiquitous language</strong> across stakeholders, and continuous information about current state, plan adherence, risks, and changes. Two big philosophies: <em>fix scope, vary time/cost</em> (RUP) or <em>fix time/cost, vary scope</em> (agile).</dd>
+
+<dt>(Rational) Unified Process (UP, RUP)</dt>
+<dd><strong>UP</strong> = the generic iterative + incremental framework; <strong>RUP</strong> = Rational's concrete methodology built on UP (defines roles, artefacts, procedures). Architecture-centric, risk-driven, use-case driven. Four phases: <strong>Inception</strong> (1 iter — feasibility, project brief), <strong>Elaboration</strong> (2 iter — architecture &amp; design), <strong>Construction</strong> (4 iter — build &amp; test → beta), <strong>Transition</strong> (2 iter — bug-fix, user testing, acceptance). Iterations ≤ 3 months; each produces an increment. Workflows (modelling, requirements, design, impl, testing, deployment) each use specific UML diagrams. Pros: fixed deliverable, deep docs, suits large/regulated projects. Cons: heavy upfront planning, poor with change.</dd>
+
+<dt>Agile methodologies</dt>
+<dd>Family of flexible, people-focused methodologies that prefer reacting to change over following a fixed plan. Examples: <strong>Scrum</strong> (most common — sprint-based, three roles, three artefacts, five events), <strong>Extreme Programming (XP)</strong> (pair programming, TDD, refactoring, small releases), <strong>Kanban</strong> (no sprints, WIP limits per column), <strong>Scrumban</strong> (hybrid), <strong>SAFe / LeSS / Spotify model</strong> (scaling frameworks for large orgs).</dd>
+
+<dt>Principles of agile software development</dt>
+<dd>From the <strong>Agile Manifesto (2001)</strong>, four values: individuals &amp; interactions <em>over</em> processes &amp; tools; working software <em>over</em> comprehensive documentation; customer collaboration <em>over</em> contract negotiation; responding to change <em>over</em> following a plan. The 12 principles include: welcome changing requirements even late; deliver working software frequently (weeks not months); business and devs work together daily; sustainable pace; technical excellence; regular reflection and adjustment.</dd>
+
+<dt>Deployment and operation of software systems</dt>
+<dd><strong>Deployment</strong> — putting the system into a production environment. Test in a near-prod environment first; document the rollback. Strategies: <em>big-bang</em>, <em>rolling</em> (default in k8s/ECS), <em>blue/green</em> (instant rollback via traffic switch), <em>canary</em> (route a small % first, watch metrics, ramp), <em>feature flags</em> (decouple deploy from release). Includes environment prep (OS, DBs), user training, customization. <strong>Operation</strong> — keeping it running: logging, monitoring, alerting, feedback loops, incident response.</dd>
+
+<dt>Maintenance of software systems</dt>
+<dd>Long-term care of a deployed system. Lehman's laws say complexity rises and quality declines unless actively maintained. Four types (IEEE/SWEBOK): <strong>corrective</strong> (fix bugs), <strong>adaptive</strong> (track environment changes — new OS, new dependency major), <strong>perfective</strong> (enhancements — actually ~60% of effort), <strong>preventive</strong> (refactor, pay down debt). Often a separate project/team. Document who to contact (knowledge management).</dd>
+
+<dt>Reusability</dt>
+<dd>The ability to use a piece of software in a different context. Mechanisms in order of cost: <strong>libraries</strong> (Maven/npm artifacts), <strong>frameworks</strong> (inversion of control — Spring, Hibernate), <strong>components</strong> (deployable units behind a contract — Jakarta beans, microservices), <strong>templates / archetypes</strong>, <strong>IaC modules</strong> (Terraform modules), <strong>design patterns &amp; reference architectures</strong>. Practical rule: <strong>"rule of three"</strong> — only extract a reusable abstraction after writing essentially the same thing three times. Usually reused within a service, not as structs between projects (changes break consumers).</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>A 6-month internal expense-tool project, Java/Spring + React: <em>life cycle</em> = agile / Scrum, 2-week sprints. <em>Process</em> = sprint planning → daily standup → sprint review → retrospective. <em>Management</em> = scope variable, budget fixed, MoSCoW priorities. <em>Deployment</em> = blue/green via ALB target groups; feature-flagged release. <em>Operation</em> = CloudWatch alarms → PagerDuty, Confluence runbook. <em>Maintenance</em> = 20% capacity reserved for adaptive + preventive maintenance; quarterly tech-debt review. <em>Reusability</em> = Terraform VPC module from a shared library; auth flow reused via OIDC.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Source for FROM REPO blocks: <a href="../3_softwarove_inzenyrstvi.md">3_softwarove_inzenyrstvi.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
 </div>

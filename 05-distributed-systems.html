@@ -333,6 +333,62 @@ GetUserOrders(user_id=42, status=PENDING)
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Basic concepts, principles</dt>
+<dd>A <strong>distributed system</strong> = multiple components on networked machines cooperating to solve a problem. Each does part of the work, so the system scales by reinforcing weak subsystems. Key building blocks: <strong>RPC</strong> (call a procedure as if local — gRPC over HTTP/2 with Protocol Buffers), <strong>message queues / event brokers</strong> (Kafka, RabbitMQ — async, persistent, decouple producers from consumers), <strong>service discovery</strong>, <strong>load balancing</strong>. Operational concerns dominate: latency, partial failure, eventual consistency.</dd>
+
+<dt>Difference between centralized and distributed system architecture</dt>
+<dd><strong>Centralized</strong> concentrates data and logic in one place; <strong>distributed</strong> disperses logic into multiple components that communicate over a network. Centralized systems are simpler, can use full ACID transactions, but they don't scale horizontally and a single failure brings everything down. Distributed systems scale horizontally, fail partially, but pay in complexity and consistency. The major architectural styles fall on a spectrum: <strong>monolith → tiered → SOA → microservices</strong>, increasing in distribution and independence.</dd>
+
+<dt>Disadvantages of both and how to overcome them</dt>
+<dd><strong>Centralized cons:</strong> no horizontal scaling → scale vertically (bigger hardware) but you hit a ceiling; failure of part = failure of whole → add redundancy / hot spares; tight coupling reduces flexibility → focus on code quality (SOLID).
+  <strong>Distributed cons:</strong> overall complexity; harder admin; needs more / more complex communication, synchronization, and handling of latency → use message queues + gRPC for fast comms, accept eventual consistency, design for partial failure with retries / circuit breakers / sagas. Also expect to give up ACID and live with <strong>BASE</strong> (basically available, soft state, eventually consistent).</dd>
+
+<dt>Replication</dt>
+<dd>Copying data to multiple nodes for <strong>availability</strong> (survive failures), <strong>read scalability</strong> (more replicas absorb more reads), and <strong>locality</strong> (CDN serves users from their region). Patterns: <strong>single-leader / master-slave</strong> (one accepts writes; simple; leader is SPOF until failover), <strong>multi-leader</strong> (multiple regional writers; needs conflict resolution), <strong>leaderless / Dynamo-style</strong> (any replica accepts writes; uses quorums R+W&gt;N for strong consistency). Always need an invalidation strategy (TTL, CQRS events).</dd>
+
+<dt>Data sharing</dt>
+<dd>Mechanisms to share data between services or instances. Options: <strong>shared database</strong> (simple, but couples services via schema — anti-pattern in microservices), <strong>distributed database</strong> (Cassandra, Spanner — handles replication internally), <strong>polyglot persistence</strong> (each service picks its own DB), <strong>messaging</strong> (Kafka publishes events, consumers build their own read models — CQRS / event sourcing), <strong>caching layer</strong> (Redis), <strong>CDN</strong> (static assets). <strong>Apache ZooKeeper</strong> for sharing service-discovery / coordination data.</dd>
+
+<dt>Service-oriented architecture (SOA)</dt>
+<dd>A pragmatic middle ground between monolith and microservices: the system is built from 4–12 independently deployable, communicating services with cohesive responsibilities (users, orders, payments, mail&hellip;). Each service can be scaled independently. A <strong>facade</strong> layer can give clients a unified API. Services often share a database (unlike microservices). Allows full ACID transactions in many cases. Good for domain-driven design without microservices overhead.</dd>
+
+<dt>Web services</dt>
+<dd>Components communicating via standardized web protocols. Three main styles:
+  <ul>
+    <li><strong>SOAP + XML</strong> — old enterprise standard; transport-independent; defined by <strong>WSDL</strong>; rich SOAP headers carry metadata, security, sessions. Strict typing.</li>
+    <li><strong>REST + JSON</strong> — current default; not a protocol but a style on top of HTTP; defined by <strong>OpenAPI</strong>; stateless; cacheable; resources identified by URLs, manipulated via HTTP verbs.</li>
+    <li><strong>GraphQL</strong> — single endpoint, client describes exactly what fields it wants → solves over-/under-fetching; defined by GraphQL Schema.</li>
+  </ul>
+For low-latency internal calls: <strong>gRPC</strong> (binary, HTTP/2, code-generation from <code>.proto</code>).</dd>
+
+<dt>Examples of existing technologies and their use</dt>
+<dd>
+  <ul>
+    <li><strong>RPC / API gateways</strong> — gRPC for internal services; REST/GraphQL for public APIs.</li>
+    <li><strong>Messaging</strong> — Apache Kafka (event streaming, persisted log), RabbitMQ (classic queue), AWS SQS/SNS/EventBridge.</li>
+    <li><strong>Distributed DBs / caches</strong> — Apache Cassandra (column-family), MongoDB (document), Redis (cache).</li>
+    <li><strong>Stream processing</strong> — Kafka Streams, Apache Flink.</li>
+    <li><strong>Batch &amp; MapReduce</strong> — Apache Hadoop, Apache Spark.</li>
+    <li><strong>Service discovery / coordination</strong> — ZooKeeper, etcd, Consul; cloud-native: AWS Cloud Map, Kubernetes Service.</li>
+    <li><strong>Orchestration</strong> — Kubernetes, ECS.</li>
+    <li><strong>Grid / volunteer computing</strong> — Folding@home.</li>
+  </ul>
+</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>Splitting an e-commerce monolith into three services: <em>Catalog</em> (REST, read-heavy, replica DB), <em>Order</em> (REST + emits <code>order.placed</code> events to Kafka), <em>Payment</em> (subscribes to <code>order.placed</code>, charges via Stripe, publishes <code>payment.completed/failed</code>). No 2PC: the order saga pattern handles consistency via correlation IDs and compensating actions. Deployed as containers on ECS; service discovery via AWS Cloud Map; observability via OpenTelemetry → CloudWatch. Anti-patterns to avoid: distributed monolith (services must deploy together), shared DB, chatty synchronous fan-out.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Source for FROM REPO blocks: <a href="../7_distribuovane_systemy.md">7_distribuovane_systemy.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
 </div>

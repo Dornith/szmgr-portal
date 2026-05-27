@@ -751,6 +751,124 @@ sudo du -h --max-depth=1 / 2>/dev/null | sort -h
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>UNIX operating system, kernel operation</dt>
+<dd>UNIX is a multi-user, multitasking OS family (Linux, *BSD, macOS, Solaris) built around the philosophy "<em>everything is a file</em>". The <strong>kernel</strong> runs in privileged mode, manages CPU, memory, devices, filesystems, and processes, and exposes its services via <strong>system calls</strong>. Boot sequence: firmware (BIOS/UEFI) → primary bootloader (MBR/EFI) → secondary bootloader (GRUB) → kernel + initrd loaded → kernel init (VM, console, CPU, buses, devices, kernel threads, mount root, exec <code>/sbin/init</code>) → user space. Architectures: <strong>monolithic</strong> (Linux: all drivers in kernel + dynamic modules), <strong>microkernel</strong> (Minix, L4: drivers in user space, message passing).</dd>
+
+<dt>Memory and device management by the kernel</dt>
+<dd><strong>Memory:</strong> virtual memory via the MMU + page tables; demand paging; copy-on-write (so <code>fork</code> is cheap); swap to disk under pressure; <strong>TLB</strong> caches translations; <strong>ASLR</strong> randomizes addresses for security; <strong>mmap</strong> maps file pages directly into the address space; <strong>OOM killer</strong> reaps processes when memory is exhausted. Process address space layout: text → data → BSS → heap (grows up) ↔ stack (grows down).
+  <strong>Devices:</strong> Linux exposes them in <code>/dev</code> as <strong>block</strong> (random-access, e.g. <code>/dev/sda</code>) or <strong>character</strong> (sequential, e.g. <code>/dev/tty</code>). Drivers register as kernel modules (<code>insmod</code>, <code>modprobe</code>), with operations open/read/write/ioctl. Hot-plug is handled by <strong>udev</strong> in user space, which creates the device node on event. <code>/sys</code> exposes the kernel device tree.</dd>
+
+<dt>Basic configuration (UNIX)</dt>
+<dd>System config lives under <code>/etc</code> as text files. Service management used to be <strong>SysV init</strong> (<code>/etc/inittab</code>, runlevels, scripts in <code>/etc/init.d</code>); today it's <strong>systemd</strong> (units in <code>/etc/systemd/system</code>, parallel startup, dependency graph, commands <code>systemctl start/stop/enable/status</code>, logs via <code>journalctl</code>). Network config varies by distro (<code>/etc/network/interfaces</code> on Debian, NetworkManager / systemd-networkd elsewhere). The Filesystem Hierarchy Standard defines where things live: <code>/bin, /sbin, /usr, /var, /etc, /home, /tmp, /opt, /boot, /proc, /sys, /dev</code>.</dd>
+
+<dt>User management (UNIX)</dt>
+<dd>Users identified by <strong>UID</strong>, groups by <strong>GID</strong>. Primary databases: <strong><code>/etc/passwd</code></strong> (username, UID, GID, GCOS comment, home, shell), <strong><code>/etc/shadow</code></strong> (encrypted password + aging info; root-only), <strong><code>/etc/group</code></strong> (group name, GID, members). Password hashing — historically 25-round DES; today SHA-512 (<code>$6$</code>), bcrypt, Argon2, all with salt. <strong>PAM</strong> (Pluggable Authentication Modules) lets you plug in LDAP/Kerberos/MFA without changing login programs; <strong>NSSwitch</strong> picks the source for name lookups (files, DNS, LDAP). Commands: <code>useradd</code>, <code>userdel</code>, <code>usermod</code>, <code>passwd</code>, <code>vipw</code>, <code>chfn</code>. Modern systemd: declarative users in <code>/usr/lib/sysusers.d</code>.</dd>
+
+<dt>Network services (UNIX)</dt>
+<dd>Built around BSD sockets API (<code>socket / bind / listen / accept / connect / send / recv</code>). Common services:
+  <ul>
+    <li><strong>SSH</strong> — encrypted remote login (port 22); key-pair auth via <code>ssh-keygen</code>.</li>
+    <li><strong>DNS</strong> — hierarchical name resolution; BIND is canonical; record types A/AAAA/CNAME/MX/NS/SOA/TXT/PTR.</li>
+    <li><strong>NFS</strong> — Network File System; built on Sun RPC + XDR + portmapper.</li>
+    <li><strong>LDAP</strong> — directory protocol for centralized user / group data; integrates with PAM/NSSwitch; replaces NIS.</li>
+    <li><strong>Kerberos</strong> — ticket-based network authentication; KDC issues TGTs; SSO across services.</li>
+    <li><strong>Email</strong> — SMTP (Postfix, Sendmail), POP3, IMAP.</li>
+    <li><strong>Firewall</strong> — netfilter in kernel, controlled by <code>iptables</code> (legacy) or <code>nftables</code> (modern); higher-level <code>firewalld</code>, <code>ufw</code>.</li>
+    <li><strong>Web</strong> — nginx, Apache.</li>
+  </ul></dd>
+
+<dt>Principles of development and development environment in UNIX</dt>
+<dd>POSIX-portable C programming. Standards: <strong>ANSI C</strong>, <strong>POSIX.1</strong>, <strong>Single UNIX Specification</strong> — code that follows SUS is portable across UNIX-like systems. Development toolchain:
+  <ul>
+    <li><strong>Compiler</strong> — <code>gcc</code> or <code>clang</code>; <strong>linker</strong> <code>ld</code>; <strong>dynamic linker</strong> <code>ld.so</code> with <code>LD_LIBRARY_PATH</code>.</li>
+    <li><strong>Build</strong> — <code>make</code>, <code>cmake</code>, <code>autoconf</code>.</li>
+    <li><strong>Libraries</strong> — static (<code>.a</code>) vs shared (<code>.so</code>).</li>
+    <li><strong>Debugger</strong> — <code>gdb</code>; tracing <code>strace</code> (syscalls), <code>ltrace</code> (library calls); profiling <code>perf</code>; memory errors <code>valgrind</code>.</li>
+    <li><strong>Shells</strong> — bash/zsh; pipes carry text.</li>
+  </ul>
+Program lifecycle: <code>main(argc, argv, envp)</code>; <code>exit()</code> vs <code>_exit()</code>; <code>atexit()</code>; long jumps via <code>setjmp/longjmp</code>; memory via <code>malloc/free</code>.</dd>
+
+<dt>Working with processes</dt>
+<dd>A process owns memory, file descriptors, signal mask, working dir, environment, real/effective/saved UID/GID. Created by <strong><code>fork()</code></strong> (duplicates calling process — copy-on-write), then <strong><code>exec()</code></strong> replaces image with a new program. Parent waits with <strong><code>wait()/waitpid()</code></strong>; otherwise child is a <em>zombie</em>. Orphan whose parent died gets reparented to <code>init</code> (PID 1). Lifecycle states (seen in <code>ps</code>): R (run/runnable), S (interruptible sleep), D (uninterruptible — I/O), Z (zombie), T (stopped). Signals (<code>SIGINT, SIGTERM, SIGKILL, SIGHUP, SIGCHLD, SIGSEGV</code>) for async notification — install handlers via <code>sigaction</code>. Threads via <strong>pthreads</strong> share address space + own stack.</dd>
+
+<dt>Working with files</dt>
+<dd>"Everything is a file" — regular files, directories, devices, sockets, pipes are all accessed via file descriptors. Each file has an <strong>inode</strong> storing metadata (owner, group, permissions, size, timestamps, block pointers); directory entries map names to inode numbers. <strong>Hard link</strong> = another directory entry sharing the inode; <strong>symbolic link</strong> = tiny file whose content is a path string. Permissions: <code>rwx</code> for user/group/other (numerical: 4/2/1). Special bits: <strong>SUID (4000)</strong> sets effective user ID to the file's owner on exec — security-critical (<code>sudo</code>'s mechanism), <strong>SGID (2000)</strong>, <strong>sticky bit (1000)</strong> on directories (e.g. <code>/tmp</code>) prevents users from deleting each other's files. <strong>POSIX ACLs</strong> via <code>getfacl/setfacl</code> for finer control.</dd>
+
+<dt>Input/output operations</dt>
+<dd>Syscalls: <code>open, read, write, close, lseek, ioctl</code>. <strong>Standard file descriptors</strong>: 0 stdin, 1 stdout, 2 stderr. Advanced techniques:
+  <ul>
+    <li><strong>File locking</strong> — <code>fcntl</code> (advisory), <code>flock</code>.</li>
+    <li><strong>Scatter-gather</strong> — <code>readv / writev</code> handle multiple buffers in one syscall.</li>
+    <li><strong>Memory mapping</strong> — <code>mmap</code> maps file pages into address space; used for large files and shared-memory IPC.</li>
+    <li><strong>I/O multiplexing</strong> — <code>select / poll</code> (O(n) scan), <code>epoll</code> (Linux, O(1) events), <code>kqueue</code> (BSD), <code>io_uring</code> (modern async).</li>
+  </ul>
+IPC mechanisms: <strong>pipes</strong> (unnamed for parent/child, FIFOs in filesystem), <strong>signals</strong>, <strong>System V/POSIX shared memory + semaphores + message queues</strong>, <strong>sockets</strong> (UNIX domain or TCP/UDP).</dd>
+
+<dt>MS Windows operating system</dt>
+<dd>NT-based since 1993. Layered architecture: HW → <strong>HAL</strong> (Hardware Abstraction Layer) → <strong>Kernel</strong> (scheduling, interrupts) → <strong>Executive</strong> (object manager, memory, I/O, process, security reference monitor) → <strong>Subsystems</strong> (Win32, WSL, legacy POSIX) → user mode (apps, system services). Philosophy: "<em>everything is an object</em>" accessed via <strong>handles</strong> (the Win analog of UNIX file descriptors). Multi-user, preemptive, supports SMP.</dd>
+
+<dt>Windows basic configuration</dt>
+<dd>Multiple config surfaces:
+  <ul>
+    <li><strong>Settings app</strong> (modern UI) and legacy <strong>Control Panel</strong>.</li>
+    <li><strong>Registry</strong> — hierarchical config DB; hives <code>HKEY_LOCAL_MACHINE</code>, <code>HKEY_CURRENT_USER</code>, <code>HKEY_USERS</code>, <code>HKEY_CLASSES_ROOT</code>, <code>HKEY_CURRENT_CONFIG</code>. Edited via <code>regedit</code> or PowerShell.</li>
+    <li><strong>Group Policy</strong> (<code>gpedit.msc</code>) — local; centrally managed in AD.</li>
+    <li><strong>Services</strong> (<code>services.msc</code>) — background daemons (UNIX systemd analog).</li>
+    <li><strong>Task Scheduler</strong> — UI for scheduled jobs (cron analog).</li>
+    <li><strong>WMI</strong> — Windows Management Instrumentation; introspection API used by management tools.</li>
+    <li><strong>Event Viewer</strong> — logging.</li>
+  </ul></dd>
+
+<dt>Windows user management</dt>
+<dd>Identity = <strong>SID</strong> (Security Identifier, e.g. <code>S-1-5-21-…-1001</code>); usernames are display labels mapped to SIDs. Account types:
+  <ul>
+    <li><strong>Local</strong> — stored in the SAM database on the local machine.</li>
+    <li><strong>Domain</strong> — stored in Active Directory; same identity across all domain machines.</li>
+    <li><strong>Microsoft account</strong> — cloud-managed.</li>
+  </ul>
+Built-in groups: Administrators, Users, Guests. <strong>UAC</strong> (User Account Control) — even admins run with a standard-user token by default; elevation prompts per action. <strong>User profiles</strong> live under <code>C:\Users\&lt;name&gt;</code>; roaming profiles for AD. Tools: <code>net user</code>, <code>net localgroup</code>, <code>lusrmgr.msc</code>, PowerShell <code>New-LocalUser</code>, <code>Add-LocalGroupMember</code>.</dd>
+
+<dt>NTFS file system</dt>
+<dd>Default Windows filesystem since NT 3.1. Features:
+  <ul>
+    <li><strong>Journaling</strong> — metadata changes written to a log first; replayed after a crash.</li>
+    <li><strong>ACLs (discretionary)</strong> — per-file/folder; far more granular than UNIX rwx (separate read / write / execute / delete / take-ownership / change-permission entries per principal). Inherited from parent. Manage via Properties → Security or <code>icacls</code>.</li>
+    <li><strong>Alternate Data Streams (ADS)</strong> — multiple data streams per file (<code>file.txt:Zone.Identifier</code> marks downloads from the internet).</li>
+    <li><strong>Hard links</strong> (<code>mklink /H</code>), <strong>junctions/symlinks</strong> (<code>mklink /J</code>, <code>mklink</code>).</li>
+    <li><strong>Sparse files</strong>, <strong>compression</strong>, <strong>quotas</strong>.</li>
+    <li><strong>EFS</strong> (Encrypting File System) — per-file encryption tied to user account.</li>
+    <li><strong>BitLocker</strong> — full-volume encryption using TPM; BitLocker To Go for removable drives.</li>
+    <li><strong>Volume Shadow Copy Service</strong> — snapshots ("Previous Versions"), foundation for backup tools.</li>
+  </ul>
+Successor for heavy storage: <strong>ReFS</strong> (Resilient File System) — Storage Spaces, Hyper-V hosts.</dd>
+
+<dt>HW devices and drivers (Windows)</dt>
+<dd>Devices visible in <strong>Device Manager</strong> (<code>devmgmt.msc</code>) as a tree of installed hardware. Driver models:
+  <ul>
+    <li><strong>WDM</strong> (Windows Driver Model) — older, kernel-mode.</li>
+    <li><strong>WDF</strong> (Windows Driver Framework) — modern; <strong>KMDF</strong> (kernel-mode) and <strong>UMDF</strong> (user-mode for less risky drivers).</li>
+  </ul>
+<strong>Driver signing</strong> is enforced — since 64-bit Vista, drivers must be signed; enforcement can be reduced for testing but not in normal use. <strong>PnP</strong> (Plug-and-Play) handles automatic detection + driver loading. <strong>Windows Update</strong> is the default delivery channel for drivers. <strong>BSoD</strong> (Blue Screen of Death) is most often caused by buggy kernel-mode drivers.</dd>
+
+<dt>Basic scripting</dt>
+<dd>Modern Windows automation = <strong>PowerShell</strong>. Cmdlets follow <code>Verb-Noun</code> (<code>Get-Process</code>, <code>Stop-Service</code>, <code>New-Item</code>, <code>Set-ItemProperty</code>). Pipelines pass <strong>.NET objects, not text</strong> — fundamentally different from UNIX shells. Filter and project with <code>Where-Object</code> and <code>Select-Object</code>. Examples: list top 5 CPU processes (<code>Get-Process | Sort-Object CPU -Descending | Select-Object -First 5</code>); create scheduled task; remote execution via <code>Invoke-Command</code> / <code>Enter-PSSession</code> over WS-Management.
+  <strong>Legacy</strong>: CMD / batch (<code>.bat</code>, <code>.cmd</code>) — tiny syntax, terrible quoting. <strong>VBScript / WSH</strong> — deprecated. <strong>WSL</strong> brings bash to Windows for cross-tooling.</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>UNIX side: write a daemon in C using <code>fork() + exec()</code>; create a systemd unit; manage users via <code>useradd</code> and AD via SSSD + Kerberos; expose an NFS share from <code>/etc/exports</code>; deploy a TLS-fronted nginx with a Let's Encrypt cert; firewall it with nftables; use <code>strace -p &lt;pid&gt;</code> to see what a hung process is doing; <code>journalctl -u myservice -f</code> for logs.
+Windows side: install Windows 11 in Hyper-V; create a domain user via <code>New-LocalUser</code> + add to Administrators; lock down NTFS permissions on a shared folder via <code>icacls</code>; enable BitLocker on the system drive with TPM; allow inbound RDP on the Domain profile but block on Public via <code>New-NetFirewallRule</code>; schedule a nightly PowerShell backup via Task Scheduler; export an Event Viewer query for failed logon events.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Sources: <code>materialy/PV065</code> (Jan Kasprzak — UNIX I) chapters 1-12; <code>materialy/PV077</code> (Jan Kasprzak — UNIX II) chapters 1-12; <code>materialy/PV175/all.txt</code> (Windows course outline from IS MUNI). Slides translated from Czech. PV175 is a topical outline only, so the Windows half leans heavily on <span class="tag added">ADDED</span> expansions.
 </div>

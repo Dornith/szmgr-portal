@@ -784,6 +784,70 @@ void chargesCardAndRecordsReceipt() {
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds. Use this as a final-revision checklist.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Quality in software systems development</dt>
+<dd><strong>Quality = the product's ability to meet requirements.</strong> Split into <em>external quality</em> (what the customer sees: correctness, performance, security, usability, reliability) and <em>internal quality</em> (what the developer feels: modularity, testability, readability, low coupling, high cohesion). Poor external quality is usually a symptom of poor internal quality — bugs are slow to fix because the code is tangled.</dd>
+
+<dt>Quality attributes</dt>
+<dd>The "-ilities". The seven typically asked: <strong>maintainability</strong> (ease of change without debt), <strong>performance</strong> (response time + resource efficiency), <strong>reliability</strong> (prob. of error-free operation), <strong>testability</strong> (ease of testing), <strong>scalability</strong> (handles more load/data), <strong>security</strong> (resistance to attack), <strong>usability</strong> (ease of use and learning). The industry-standard reference framework is <strong>ISO/IEC 25010</strong>.</dd>
+
+<dt>Software metrics</dt>
+<dd>Measurable aspects of code: LOC, number of classes/methods, class coupling, inheritance depth, <strong>cyclomatic complexity</strong> (independent paths, <code>E - N + 2P</code>), test coverage. <em>Direct</em> metrics are measured, <em>derived</em> ones computed from direct (defect density). <strong>Goodhart's Law warning:</strong> when a measure becomes a target it stops being a good measure — metrics are thermometers, not steering wheels.</dd>
+
+<dt>Tactics for quality assurance at the level of individual quality attributes</dt>
+<dd>Per-attribute mitigations. <strong>Maintainability</strong> → refactor to cohesive units, decouple via interfaces. <strong>Performance</strong> → caching, parallelism, async, bottleneck mitigation. <strong>Reliability</strong> → input validation, transactions, retries, heartbeats, removal of single points of failure. <strong>Testability</strong> → DI, no global state, separate init from logic. <strong>Scalability</strong> → smaller independently deployable units, sharded data. <strong>Security</strong> → encryption + bug fixing. Tactics conflict (perf vs maintainability) so you must choose what to optimize.</dd>
+
+<dt>Clean Code</dt>
+<dd>Robert Martin's discipline of writing code that is read more often than written. Key practices: <strong>meaningful names</strong> (booleans as <code>has*/is*</code>, classes as nouns, methods as verbs), <strong>small functions / classes</strong> (SRP), <strong>language conventions</strong>. Three guiding principles: <strong>DRY</strong> (don't repeat yourself — one source of truth), <strong>KISS</strong> (simplicity first), <strong>YAGNI</strong> (don't build for hypothetical futures).</dd>
+
+<dt>SOLID principles</dt>
+<dd>Five OO design principles:
+  <ul>
+    <li><strong>S</strong>ingle Responsibility — one reason to change per class.</li>
+    <li><strong>O</strong>pen/Closed — open to extension, closed to modification (extend via inheritance/interfaces, don't edit existing).</li>
+    <li><strong>L</strong>iskov Substitution — subclasses must honour the parent's contract.</li>
+    <li><strong>I</strong>nterface Segregation — many small interfaces over one fat one.</li>
+    <li><strong>D</strong>ependency Inversion — depend on abstractions, inject concretes.</li>
+  </ul>
+Two themes: <em>cohesion</em> (SRP, ISP) and <em>coupling/extensibility</em> (OCP, LSP, DIP).</dd>
+
+<dt>Code refactoring</dt>
+<dd><strong>Changing the internal structure without changing external behaviour.</strong> Requires tests as a safety net. Common techniques: <em>extract function</em>, <em>inline function</em>, <em>move method/field</em>, <em>extract/inline class</em>, <em>early return</em> (replace nested <code>if-else</code> with guard clauses), <em>rename</em>, <em>parameter object</em> (group many params into a struct). Trade-off: readability may slightly hurt performance, usually worth it.</dd>
+
+<dt>Code testing</dt>
+<dd>The process of evaluating whether the system meets specified requirements. Dijkstra: "testing can show the presence of bugs, never their absence." Practical taxonomy by <strong>visibility</strong>: <em>white-box</em> (see source — unit, integration) vs <em>black-box</em> (only inputs/outputs — system, acceptance). Other types referenced by name: <em>regression</em>, <em>smoke</em>, <em>sanity</em>, <em>A/B</em>, <em>mutation testing</em>.</dd>
+
+<dt>Unit tests</dt>
+<dd>Validate an isolated unit (function/class) behaves as expected. White-box. Fast, deterministic, one assertion per test. Dependencies isolated via <strong>test doubles</strong>: <em>dummy</em> (placeholder), <em>fake</em> (working but unfit for prod, e.g. in-memory DB), <em>stub</em> (returns canned data), <em>spy</em> (records calls), <em>mock</em> (pre-programmed expectations). Structure: <strong>AAA</strong> — Arrange, Act, Assert.</dd>
+
+<dt>Integration tests</dt>
+<dd>Verify multiple units interact correctly. Slower, larger, black/white box. Real DB via <strong>Testcontainers</strong> (spins up actual Postgres/Kafka in Docker), real HTTP via REST Assured / Playwright for UI.</dd>
+
+<dt>User and acceptance tests</dt>
+<dd><strong>User tests</strong> (system tests) — verify the system as a whole meets specified requirements: usability, capacity, performance, security. Black box. Driven via automated browser (Playwright). <strong>Acceptance tests</strong> — verify business requirements; performed with the customer ticking off pre-agreed criteria. Often expressed in <strong>Gherkin</strong> (Given/When/Then) as part of BDD.</dd>
+
+<dt>Debugging</dt>
+<dd>Systematic discipline, not random poking. Steps: <em>reproduce reliably</em>, <em>bisect</em> via <code>git bisect</code> to find the regression commit, <em>form a hypothesis</em>, <em>verify with one experiment at a time</em>. Tools: debuggers for sequential algorithm bugs, <em>logging</em> for concurrency / timing bugs (a debugger changes timing). Always end with a post-mortem: how did this slip past tests? Add the missing test.</dd>
+
+<dt>Performance testing</dt>
+<dd>Find the system's limits. <strong>Load testing</strong> — sustained expected traffic. <strong>Stress testing</strong> — short spikes / overload. Plus <em>soak</em> (endurance, find leaks), <em>spike</em>, <em>capacity</em>, <em>volume</em>. Tools: Gatling, Siege, JMeter, LoadRunner. Outcome: identify bottlenecks; remember performance often trades off against maintainability.</dd>
+
+<dt>Quality management process in software systems development</dt>
+<dd>Four phases: <strong>define</strong> (specify functional + non-functional requirements, set metrics &amp; criteria) → <strong>assure</strong> (define and enforce processes that prevent defects: CI/CD, code review, standards) → <strong>control</strong> (verify the product and the processes are followed; monitor) → <strong>improve</strong> (continuously improve processes). The <strong>Capability Maturity Model (CMM)</strong> rates an org's maturity from 1 (chaos/initial) to 5 (optimising).</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>End-to-end on a Java/Spring service on AWS: <em>define</em> acceptance criteria in Jira (Gherkin) + reference NFR wiki. <em>Assure</em> with pre-commit Spotless + Checkstyle, CI runs Maven verify with JaCoCo coverage gate, SonarQube quality gate, Terraform scanned by tfsec/checkov. <em>Control</em> with CloudWatch synthetic canaries, latency &amp; error alarms → PagerDuty. <em>Improve</em> with weekly DORA-metric review (deploy freq, lead time, change failure rate, MTTR) and blameless post-mortems.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Source for FROM REPO blocks: <a href="../2_kvalita_kodu.md">2_kvalita_kodu.md</a>. Translated to English and lightly re-structured. All <span class="tag added">ADDED</span> blocks are mine.
 </div>

@@ -603,6 +603,53 @@ h2:hover .anchor, h3:hover .anchor { opacity: 1; }
 }
 .placeholder-banner strong { color: var(--warn); }
 
+/* ---------- "Answering the question" exam-answers block ---------- */
+.exam-answers {
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-elev));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 20px 0;
+}
+.exam-answers dl { margin: 0; }
+.exam-answers dt {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 18px 0 6px;
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  line-height: 1.5;
+}
+.exam-answers dt:first-child { margin-top: 0; }
+.exam-answers dt::before {
+  content: '“';
+  margin-right: 2px;
+  color: var(--fg-dim);
+  font-family: var(--font-sans);
+}
+.exam-answers dt::after {
+  content: '”';
+  margin-left: 2px;
+  color: var(--fg-dim);
+  font-family: var(--font-sans);
+}
+.exam-answers dd {
+  margin: 0 0 0 14px;
+  padding: 4px 0 4px 14px;
+  font-size: 14.5px;
+  color: var(--fg);
+  line-height: 1.65;
+}
+.exam-answers dd p { margin: 0 0 8px; }
+.exam-answers dd p:last-child { margin-bottom: 0; }
+.exam-answers dd ul, .exam-answers dd ol { margin: 6px 0; padding-left: 22px; }
+.exam-answers dd li { margin: 2px 0; font-size: 14px; }
+.exam-answers dd strong { color: var(--fg-strong); }
+.exam-answers dd code { font-size: 13px; }
+
 /* small inline pill for course codes */
 .course-code {
   display: inline-block;

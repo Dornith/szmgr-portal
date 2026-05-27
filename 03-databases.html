@@ -663,6 +663,50 @@ COMMIT;</code></pre>
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Principles of data storage, databases</dt>
+<dd>Application data is stored either directly in the <strong>filesystem</strong> (good for blobs — PDFs, images; bad for consistency, concurrent access, querying), or in a <strong>database system</strong> (uniform interface, security, transactions, queryability, but more overhead). A database is structured file management with strong guarantees layered on top: schema, locking, transactions, durability, an indexed query layer.</dd>
+
+<dt>Architecture of relational databases</dt>
+<dd>Typical RDBMS layers: <strong>database server</strong> (accepts requests) → <strong>RDBMS</strong> (auth, parser, planner/optimiser, executor, buffer manager, transaction manager) → <strong>database</strong> (the on-disk storage). Built around the <strong>ANSI/SPARC three-level schema</strong>: <em>external</em> (per-user views), <em>conceptual</em> (logical schema), <em>internal</em> (physical layout). The point is independence between levels — adding an index doesn't change application code.</dd>
+
+<dt>SQL query language and its parts (definitions, manipulation, transactions)</dt>
+<dd>SQL is the standard declarative language for relational DBs, derived from <strong>relational algebra</strong>. Four sub-languages: <strong>DDL</strong> (Data Definition — <code>CREATE / ALTER / DROP</code>), <strong>DML</strong> (Data Manipulation — <code>SELECT / INSERT / UPDATE / DELETE</code>), <strong>TCL</strong> (Transaction Control — <code>COMMIT / ROLLBACK / SAVEPOINT</code>), <strong>DCL</strong> (Data Control — <code>GRANT / REVOKE</code>). Some systems add a procedural extension (PL/SQL on Oracle). Always use prepared statements to prevent SQL injection.</dd>
+
+<dt>Data schema definition language, DDL</dt>
+<dd>The part of SQL that defines structure. <code>CREATE TABLE Products(id INT PRIMARY KEY, ean INT UNIQUE NOT NULL, ...)</code>; <code>ALTER TABLE ... ADD COLUMN</code>; <code>DROP TABLE</code>. Defines columns, data types, primary/foreign keys, <strong>integrity constraints</strong>. Always auto-generate primary keys (<code>SERIAL</code>, <code>AUTOINCREMENT</code>) — external "unique" values aren't. In production, never run DDL directly: use a migration tool (<strong>Flyway</strong>, <strong>Liquibase</strong>) with UP/DOWN scripts, and follow the <strong>expand/contract</strong> pattern for zero-downtime schema changes.</dd>
+
+<dt>Data manipulation language, DML</dt>
+<dd><code>SELECT col FROM tbl JOIN ... WHERE ... GROUP BY ... HAVING ... ORDER BY ... LIMIT</code>. Key gotcha: <strong>SQL logical evaluation order ≠ written order</strong>: FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT. That's why you can't reference a <code>SELECT</code> alias in <code>WHERE</code> but you can in <code>ORDER BY</code>. <code>INSERT</code> respects constraints; <code>UPDATE</code> or <code>DELETE</code> without <code>WHERE</code> hits every row.</dd>
+
+<dt>Relational algebra</dt>
+<dd>The formal foundation of SQL. A <strong>relation</strong> = subset of the Cartesian product of attribute domains (i.e. a set of tuples with the same header). Operators: <strong>projection</strong> (π, columns), <strong>selection</strong> (σ, WHERE), <strong>rename</strong> (ρ, AS), <strong>set ops</strong> (∪, ∩, −), <strong>Cartesian product</strong> (×), <strong>join</strong> (⋈), <strong>grouping/aggregation</strong>. Each operator maps directly to SQL. Limitation: some queries (e.g. <strong>transitive closure</strong>) can't be expressed in pure relational algebra — but SQL extends it via recursive CTEs (<code>WITH RECURSIVE</code>).</dd>
+
+<dt>Integrity constraints</dt>
+<dd>Part of DDL — restrict what values fields can take. Four kinds: <strong>entity integrity</strong> (primary key = NOT NULL + UNIQUE), <strong>domain integrity</strong> (type, NOT NULL, <code>CHECK</code>), <strong>referential integrity</strong> (foreign keys with <code>ON DELETE CASCADE / SET NULL / RESTRICT</code>), <strong>user-defined</strong> (CHECK, triggers, app logic). Plus normal forms: <strong>1NF</strong> (atomic columns), <strong>2NF</strong> (no partial dependency on composite key), <strong>3NF</strong> (no transitive dependency). Mnemonic: <em>"the key, the whole key, and nothing but the key — so help me Codd."</em></dd>
+
+<dt>Transaction control</dt>
+<dd>A transaction is a group of operations treated as one. RDBMS transactions have <strong>ACID</strong>: <strong>Atomicity</strong> (all or none), <strong>Consistency</strong> (no constraint violations), <strong>Isolation</strong> (concurrent transactions don't interfere; tunable level), <strong>Durability</strong> (persists after commit). Controlled with <code>BEGIN</code>, <code>COMMIT</code>, <code>ROLLBACK</code>, <code>SAVEPOINT</code>. Isolation levels (READ UNCOMMITTED → READ COMMITTED → REPEATABLE READ → SERIALIZABLE) trade safety for throughput, allowing/preventing the anomalies <em>dirty read</em>, <em>non-repeatable read</em>, <em>phantom read</em>.</dd>
+
+<dt>Indexing</dt>
+<dd>A separate sorted structure that speeds up frequent queries on a column or combination. <strong>Without index:</strong> O(n) scan. <strong>With B+/B-tree:</strong> O(log n) — supports equality + range. <strong>With hash index:</strong> O(1) average — equality only. <strong>R-tree:</strong> multi-dimensional (geospatial). <strong>Bitmap:</strong> low-cardinality columns in warehouses. <strong>GIN/full-text:</strong> text search. Cost: every <code>INSERT/UPDATE/DELETE</code> must update every index, so don't index speculatively. Verify with <code>EXPLAIN ANALYZE</code>.</dd>
+
+<dt>Hashing</dt>
+<dd>Maps input of arbitrary length to a fixed-length output (the hash). Properties: <strong>one-way</strong> (can't recover input), <strong>deterministic</strong>, <strong>collision-resistant</strong> (weak: hard to find another input with same hash; strong: hard to find any two with same hash). Uses in DBs: <em>hash indexes</em> (equality lookups), <em>hash joins</em> (O(n+m) vs nested-loop O(n×m)), <em>sharding/partitioning</em> (hash of partition key picks the shard). Algorithms: MD5 (broken), SHA-2 family (secure), Argon2id / bcrypt for passwords (with salt + pepper).</dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>Build an orders table with <code>BIGSERIAL</code> PK, FK to customers, <code>CHECK</code> on total_cents and status enum, composite index <code>(customer_id, created_at DESC)</code> for the dashboard query. Run schema changes through Flyway. Wrap a money transfer in <code>BEGIN ... COMMIT</code>, catch failures and <code>ROLLBACK</code>. Use <code>EXPLAIN ANALYZE</code> on the slow report query, add the missing covering index, watch latency drop 100×. Store passwords as Argon2id hashes with per-user salt, pepper in AWS Secrets Manager.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Source for FROM REPO blocks: <a href="../5_databaze.md">5_databaze.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
 </div>

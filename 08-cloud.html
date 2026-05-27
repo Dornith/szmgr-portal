@@ -647,6 +647,81 @@ Networking        you              vendor            vendor            vendor
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>IaaS, PaaS, SaaS cloud</dt>
+<dd>Three service models distinguished by where the vendor's responsibility ends and yours begins:
+  <ul>
+    <li><strong>IaaS</strong> (Infrastructure as a Service) — vendor manages physical HW, virtualization, networking; you manage OS upward. Examples: EC2 + EBS / Azure VM + Managed Disk / Compute Engine + Persistent Disk.</li>
+    <li><strong>PaaS</strong> (Platform as a Service) — vendor also manages OS, runtime, middleware; you bring code + data. Examples: Elastic Beanstalk / Azure App Service / App Engine. Includes managed containers (ECS, AKS, Container Apps, Cloud Run) and serverless / FaaS (Lambda, Azure Functions, Cloud Functions).</li>
+    <li><strong>SaaS</strong> (Software as a Service) — vendor manages everything; you just use the application. Gmail, Salesforce, Office 365.</li>
+  </ul>
+NIST's 5 essential characteristics: on-demand self-service, broad network access, resource pooling, rapid elasticity, measured service. Deployment models: <strong>public, private, hybrid</strong> (and increasingly multi-cloud).</dd>
+
+<dt>Concepts and principles of designing and developing applications for deployment in the cloud</dt>
+<dd>Classical on-prem apps don't use the cloud well — higher cost, no elasticity. A <strong>cloud-native</strong> app is designed around the cloud's properties: <strong>stateless</strong> services (so they horizontally scale), <strong>externalized config &amp; secrets</strong> (12-factor app), <strong>idempotent</strong> operations (so retries are safe), <strong>immutable infrastructure</strong> (replace, don't patch), <strong>asynchronous messaging</strong> for decoupling. Build for <strong>transient failures as normal events</strong> (retry with exponential backoff). <strong>Minimize cross-service calls</strong> and use <strong>batch processing</strong> where possible (PA200: batching can yield 50× throughput). Account for service quotas. Track real workload patterns for cost predictability.</dd>
+
+<dt>Cloud services in the context of PaaS cloud</dt>
+<dd>The PaaS layer covers compute, data, integration, ML/AI, observability. Compute: <strong>managed web/app hosting</strong> (App Service / Elastic Beanstalk), <strong>managed containers / Kubernetes</strong> (AKS / EKS / GKE / ECS / Container Apps / Cloud Run), <strong>FaaS</strong> (Lambda / Azure Functions / Cloud Functions). Integration: <strong>API gateways</strong>, <strong>message brokers</strong> (Service Bus / SQS / Pub/Sub, Kafka MSK), <strong>workflow orchestration</strong> (Step Functions, Logic Apps). AI: managed models, embeddings, vision, NLP services. Monitoring: Application Insights / CloudWatch / Cloud Operations. Each PaaS service trades control for ops cost savings.</dd>
+
+<dt>Data storage services</dt>
+<dd>Pick storage by access pattern, not by hype:
+  <ul>
+    <li><strong>Object / blob</strong> — S3 / Azure Storage / Cloud Storage. Highly scalable, durable, eventually consistent on overwrites; tiers Hot/Cool/Archive trade access cost for storage cost. Redundancy: LRS / ZRS / GRS / RA-GRS.</li>
+    <li><strong>Block</strong> — EBS / Managed Disk / Persistent Disk. Attached to compute, high IOPS.</li>
+    <li><strong>File shares</strong> — EFS / Azure Files / Filestore. SMB/NFS, mountable by multiple instances.</li>
+    <li><strong>Relational managed</strong> — RDS/Aurora / Azure SQL / Cloud SQL. Automatic backups, failover, read replicas.</li>
+    <li><strong>NoSQL managed</strong> — DynamoDB, DocumentDB, Neptune, Keyspaces / Cosmos DB / Bigtable, Firestore.</li>
+    <li><strong>Data warehouse / analytics</strong> — Redshift, Athena / Synapse, Databricks / BigQuery.</li>
+    <li><strong>Cache</strong> — ElastiCache / Cache for Redis / Memorystore.</li>
+  </ul>
+A storage account / S3 bucket is a security boundary — protect access keys, prefer IAM roles, block public access by default.</dd>
+
+<dt>Quality assurance &mdash; performance</dt>
+<dd><strong>Throughput</strong> = ops/sec the system can handle. Bottleneck is the slowest component in the call chain — know your service quotas. Recommendations: minimize service calls, batch them, optimize each (load only needed data), call in parallel where independent. Caching layers (CloudFront, Redis) are the #1 high-leverage move. Measure with HTTP benchmarking tools (Azure Load Testing, AWS Distributed Load Testing, wrk, Gatling, JMeter). Watch <strong>response time</strong> = communication latency + processing time; merge calls that hit the same resource.</dd>
+
+<dt>Quality assurance &mdash; scalability</dt>
+<dd><strong>Scalability</strong> = ability to handle larger load by adding resources. <strong>Elasticity</strong> = ability to automatically adjust resources to current workload.
+  <ul>
+    <li>Design for <strong>stateless</strong> request processing — required for horizontal scaling.</li>
+    <li>Distribute load — don't lean on vertical scaling (ceilings + cost).</li>
+    <li>Use scalable cloud services and know their mechanics (some have hard quotas).</li>
+    <li>Use <strong>auto-scale</strong> with metrics (CPU, request rate, queue depth) — but account for warm-up time. Allocate before the peak hits.</li>
+    <li>Patterns: read replicas, sharding, SQS in front of consumers, CloudFront for static assets.</li>
+  </ul></dd>
+
+<dt>Quality assurance &mdash; availability</dt>
+<dd>Cloud SLA tiers: 99.95–99.99% per service. Three 9s = 8h 45m / year of downtime; four 9s = 53 min; five 9s = 5 min. SLA of composite system = product of component SLAs — three 99.95% services in series ≈ 99.85%.
+  <ul>
+    <li>Use services with <strong>built-in HA</strong>.</li>
+    <li>Handle <strong>transient faults</strong> with retry + exponential backoff + jitter.</li>
+    <li>Design recovery scenarios; consider running in <em>degraded</em> mode under partial failure.</li>
+    <li>Multi-AZ first; multi-region for the highest tiers.</li>
+    <li>Practice <strong>Chaos Engineering</strong> (Chaos Monkey, AWS FIS, Azure Chaos Studio) — minimize blast radius, vary real events, automate.</li>
+  </ul></dd>
+
+<dt>Quality assurance &mdash; security</dt>
+<dd><strong>Shared responsibility model</strong> — the vendor secures <em>of</em> the cloud (physical, hypervisor); you secure <em>in</em> the cloud (your data, IAM, network, code). The boundary shifts with the service model.
+  <ul>
+    <li><strong>Identity (IAM)</strong> — least privilege, MFA, roles over long-lived keys, SSO via OIDC/SAML.</li>
+    <li><strong>Encryption</strong> — at rest (KMS-backed), in transit (TLS). Customer-managed keys for compliance.</li>
+    <li><strong>Network</strong> — VPC + private subnets + security groups + private endpoints; WAF + Shield for public surfaces.</li>
+    <li><strong>Audit</strong> — CloudTrail / Activity Log records every API call. Posture management aggregates findings (Security Hub, Defender for Cloud).</li>
+    <li><strong>Compliance</strong> — provider's SOC2/ISO 27001/HIPAA/PCI certifications carry forward into your audit story.</li>
+  </ul></dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>Java/Spring service on AWS: ECS Fargate (PaaS containers, like Azure Container Apps); RDS Postgres Multi-AZ for transactional data; S3 for blobs (lifecycled to Glacier); ElastiCache Redis in front of RDS (US Elections case study from PA200 — added cache, throughput grew an order of magnitude); ALB in public subnets, ECS in private; CloudFront in front of S3 and ALB; auto-scaling on CPU + custom queue-depth metric; multi-AZ deployment; daily backup + cross-region replication for the highest-tier data; CI/CD via GitLab → ECR → Terraform → blue/green ECS; CloudWatch alarms + GuardDuty + Security Hub; monthly AWS FIS chaos test that kills a task and drops an AZ.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Sources: <code>materialy/PA200</code> (Overview, Design Challenges, IaaS, PaaS, Storage, CI/CD lectures by RNDr. David Gesvindr) &mdash; the lecture is taught in Azure terms; I've added the AWS service name beside each Azure name. The PA200 overview itself already lists AWS, Azure and GCP equivalents in many places.
 </div>

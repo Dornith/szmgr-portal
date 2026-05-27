@@ -778,6 +778,99 @@ other::---
   </ul>
 </div>
 
+<!-- ============================================ -->
+<h2>Answering the question &mdash; point by point</h2>
+
+<p>Each phrase from the exam prompt, with a tight answer you could give aloud in 30&ndash;60 seconds.</p>
+
+<section class="exam-answers">
+<dl>
+
+<dt>Aspects affecting system security at the level of its infrastructure</dt>
+<dd>Three layers, all needed (defense in depth):
+  <ul>
+    <li><strong>Network layer</strong> — firewalls (stateful, NGFW, WAF), VPN/IPSec, segmentation (VLAN/VPC/security groups), TLS, DNSSEC, BGP/RPKI, DDoS mitigation.</li>
+    <li><strong>Host layer</strong> — OS hardening (CIS Benchmarks), patching, EDR, host firewall, MAC (SELinux/AppArmor), driver signing.</li>
+    <li><strong>Application layer</strong> — secure coding, dependency scanning, WAF rules.</li>
+  </ul>
+Cross-cutting: <strong>IAM</strong> (least privilege, MFA, no long-lived keys), <strong>monitoring &amp; logging</strong> (SIEM), <strong>incident response</strong>, <strong>backup &amp; recovery</strong>. The CIA triad is the goal: Confidentiality, Integrity, Availability. Plus prevention vs detection vs reaction — you need all three.</dd>
+
+<dt>Network security</dt>
+<dd>Protecting data in motion and limiting attacker movement.
+  <ul>
+    <li><strong>Encryption</strong> — TLS between transport and application; IPSec at the network layer (mandatory in IPv6); SSH for remote login; VPN/WireGuard tunnels.</li>
+    <li><strong>Segmentation</strong> — VLAN, subnets, security groups, NACLs; Zero Trust ("never trust, always verify") replaces perimeter trust.</li>
+    <li><strong>Filtering</strong> — packet, stateful, NGFW; WAF for HTTP-level attacks (OWASP Core Rule Set).</li>
+    <li><strong>Detection</strong> — IDS/IPS (Snort, Suricata, Zeek); flow logs.</li>
+    <li><strong>DDoS</strong> — CDN scrubbing (Cloudflare, AWS Shield), anycast.</li>
+    <li><strong>Authentication</strong> — Kerberos for SSO, SAML/OIDC for federated identity.</li>
+  </ul></dd>
+
+<dt>Cybersecurity threats</dt>
+<dd>A <strong>cyber threat</strong> = circumstance or event with potential adversarial impact on operations/assets/individuals (NIST). Threat actors range from script kiddies → organized crime (ransomware-as-a-service, $1.2T global industry) → nation-states (Stuxnet, Ukraine grid). Threats are managed through <strong>Cyber Threat Intelligence</strong> (CTI) — evidence-based knowledge, sources include OSINT, logs, traffic, IR. Standards: <strong>MITRE ATT&amp;CK</strong> (tactics/techniques matrix), <strong>CAPEC</strong> (attack patterns), <strong>STIX</strong> (CTI format), <strong>TAXII</strong> (exchange protocol). Indicators of Compromise (IoC) come in three flavours: atomic (IP, hash), computed (regex, file hash), behavioral (anomaly). <strong>Pyramid of Pain</strong> — TTPs are hardest for attackers to change; IPs/hashes are trivial.</dd>
+
+<dt>Examples of attacks</dt>
+<dd>Canonical ones to memorize:
+  <ul>
+    <li><strong>Stuxnet (2010)</strong> — state-on-infrastructure; ICS/SCADA sabotage of Iranian centrifuges.</li>
+    <li><strong>Mirai (2016)</strong> — IoT botnet for DDoS; took down DynDNS.</li>
+    <li><strong>SolarWinds (2020)</strong> — supply-chain; trojanized Orion update reached ~18 000 customers.</li>
+    <li><strong>Colonial Pipeline (2021)</strong> — ransomware via leaked VPN creds without MFA; US fuel shutdown.</li>
+    <li><strong>Log4Shell (CVE-2021-44228)</strong> — RCE via JNDI lookup in logged input; massive blast radius.</li>
+    <li><strong>Heartbleed (CVE-2014-0160)</strong> — OpenSSL leak; arbitrary process memory readable.</li>
+  </ul>
+By layer: DDoS, MitM, ARP/DNS spoofing, BGP hijacking at network; privilege escalation, kernel exploits at host; SQLi, XSS, CSRF, SSRF, IDOR, RCE at application; credential stuffing, MFA bypass at identity; dependency confusion, typosquatting at supply chain. <strong>Verizon DBIR</strong>: ~90% of breaches happen at the web application layer.</dd>
+
+<dt>Design of security mechanisms</dt>
+<dd>Saltzer &amp; Schroeder principles + standard frameworks. Principles examiners want:
+  <ul>
+    <li><strong>Defense in depth</strong> — multiple independent layers.</li>
+    <li><strong>Least privilege</strong> — each principal gets only what's needed; default-deny.</li>
+    <li><strong>Fail securely</strong> — if a check fails, deny.</li>
+    <li><strong>Separation of duties</strong> — no single individual can perform a critical action alone.</li>
+    <li><strong>Secure defaults</strong> — opt into insecurity, not out of it.</li>
+    <li><strong>Economy of mechanism</strong> — keep it simple.</li>
+    <li><strong>Complete mediation</strong> — check every access, no caching of authorization.</li>
+    <li><strong>Open design</strong> — security shouldn't depend on secrecy of design (Kerckhoffs).</li>
+    <li><strong>Psychological acceptability</strong> — if users find it hard, they'll work around it.</li>
+  </ul>
+Hardening guidelines come from <strong>CIS Benchmarks</strong>, <strong>NIST CSF</strong> + 800-series SPs, <strong>ISO 27001/27002</strong>, <strong>NÚKIB</strong> (Czech). Access control via DAC (file owner decides), MAC (system enforces — SELinux/AppArmor), RBAC, ABAC.</dd>
+
+<dt>Vulnerability detection</dt>
+<dd>Process of <strong>discovering → assessing → analyzing → fixing → measuring</strong> vulnerabilities (the lifecycle). Tools:
+  <ul>
+    <li><strong>Vulnerability scanners</strong> — Nessus, OpenVAS, Nexpose, AWS Inspector, Qualys.</li>
+    <li><strong>SAST</strong> (static analysis) — SonarQube, Semgrep, Snyk Code.</li>
+    <li><strong>DAST</strong> (dynamic analysis) — OWASP ZAP, Burp.</li>
+    <li><strong>SCA</strong> (dependency scanning) — Dependabot, Snyk Open Source, OWASP Dependency-Check.</li>
+    <li><strong>Container scanning</strong> — Trivy, Grype.</li>
+    <li><strong>IaC scanning</strong> — tfsec, checkov.</li>
+    <li><strong>Fuzzing</strong> — generates random/mutated inputs to find crashes (AFL, libFuzzer).</li>
+  </ul>
+Enumerations to know by name: <strong>CVE</strong> (specific vulnerabilities, e.g. CVE-2021-44228), <strong>CWE</strong> (weakness categories like CWE-89 = SQLi), <strong>CVSS</strong> (severity scoring v3.1/v4 — impact + exploitability), <strong>CPE</strong> (platform/product enumeration), <strong>NVD</strong> (NIST's CVE database with CVSS scores), <strong>SCAP</strong> (the standard that ties them together).</dd>
+
+<dt>Penetration testing</dt>
+<dd>Authorized simulation of an attacker to find security holes <em>before</em> a real adversary. Sits in the <strong>OffSec pyramid</strong> between automated vulnerability assessment (broad, scalable) and red teaming (full-system, creative). Internal team (continuous testing, knows the system) + external team (unbiased, used for compliance) is the ideal. Three access levels: <strong>black-box</strong> (no info), <strong>grey-box</strong> (some info), <strong>white-box</strong> (full info + source).
+  <strong>Lifecycle</strong>: Preparation (goals, scope, rules of engagement, NDA) → Testing (reconnaissance → threat modeling / vulnerability identification → exploitation → post-exploitation) → Reporting.
+  <strong>Methodologies</strong>: OWASP Web Security Testing Guide, OSSTMM, PTES, NIST 800-115. <strong>Rule of thumb</strong>: violating the scope is the fastest way to lose a contract.</dd>
+
+<dt>Analysis of security attacks</dt>
+<dd>After an attack: <strong>incident response</strong> + <strong>forensics</strong>. The IR lifecycle (NIST 800-61): Preparation → Detection &amp; Analysis → Containment, Eradication, Recovery → Post-incident activity (lessons learned). Tools and concepts:
+  <ul>
+    <li><strong>SIEM</strong> (Security Information &amp; Event Management) — Splunk, IBM QRadar, Elastic Security — collects logs, correlates events, alerts.</li>
+    <li><strong>SOAR</strong> (Orchestration, Automation, Response) — runs playbooks; auto-quarantines hosts.</li>
+    <li><strong>Threat hunting</strong> — proactive search for attackers that evaded automated detection (looking for <code>whoami</code>, lateral movement, persistence).</li>
+    <li><strong>Forensics</strong> — disk imaging, memory analysis, log timeline, chain of custody.</li>
+    <li><strong>Blue team / Red team / Purple team</strong> — defend / attack / cooperate to improve detection.</li>
+    <li><strong>Honeypotting</strong> — deliberately exposed bait to study attacker behaviour.</li>
+  </ul></dd>
+
+<dt>Practical examples for all of the above</dt>
+<dd>Hardening a Java/Spring service on AWS: private subnets + tight security groups + WAF on the ALB; Shield Standard against DDoS. IAM roles with least privilege; no long-lived AWS keys; secrets in AWS Secrets Manager; KMS-encrypted EBS/RDS/S3. CIS-benchmark base image, non-root container, read-only root FS. CI pipeline runs Trivy + Snyk + Semgrep + tfsec; merges require 2 reviewers; container images Cosign-signed. Runtime: GuardDuty + Security Hub aggregate findings; CloudTrail logs everything; PagerDuty on alarms. Quarterly external pentest aligned with PTES; bug bounty program; annual ISO 27001 audit.</dd>
+
+</dl>
+</section>
+
 <div class="footnote">
   Sources: <code>materialy/PA211</code> (Cybersecurity Operations lectures &mdash; Intro, Vulnerability Mgmt, Threat Mgmt, Pen Testing, Hardening, Access Control) + <code>materialy/PA018</code> (Advanced IT Security &mdash; Intro / generic goals, Malware threats / history) + <a href="../dev_3_bezpecny_kod.md">dev_3_bezpecny_kod.md</a> for protocol-level overlaps.
 </div>
