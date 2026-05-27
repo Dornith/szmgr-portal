@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q3 Databases — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 3 &middot; <span class="course-code">PV003</span> <span class="course-code">PA152</span></div>
+  <h1>Databases</h1>
+  <p class="q-text">
+    Principles of data storage, databases. Architecture of relational databases, SQL query language and its parts
+    (definitions, manipulation, transactions). Data schema definition language, DDL. Data manipulation language, DML.
+    Relational algebra, integrity constraints, transaction control. Indexing, hashing. Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>5_databaze.md</code></div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Filesystem vs DB</li>
+  <li>Encoding &amp; compression</li>
+  <li>Relational DB architecture</li>
+  <li>SQL: DDL</li>
+  <li>SQL: DML</li>
+  <li>SQL: transactions (ACID)</li>
+  <li>Relational algebra</li>
+  <li>Integrity constraints</li>
+  <li>Indexing (B+, R-tree)</li>
+  <li>Hashing</li>
+  <li>Practical examples</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Principles of data storage</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Data is stored either directly in the filesystem, or in a database (relational, document, graph&hellip;).</p>
+</div>
+
+<h3>Filesystem</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Lower system overhead, simpler.</li>
+    <li>Ensuring consistency is harder; we have to deal with file locking; transactional approach is problematic.</li>
+    <li>Access-rights management is more demanding.</li>
+    <li>Data formats must be handled consistently.</li>
+    <li>Worse readability and documentability of the data model.</li>
+    <li>The OS abstracts different filesystems, providing a unified interface for applications.</li>
+    <li>For applications, the filesystem is suitable for large files (PDF, images, video, static pages &mdash; unless using a CDN) that are impractical to keep in a DB. Care must be taken not to expose more than intended.</li>
+  </ul>
+</div>
+
+<h3>Database system</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Independent of the application; a uniform interface for all.</li>
+    <li>Easy security, consistency, concurrent access.</li>
+    <li>Easy readability and documentability.</li>
+    <li>Relational systems correlate with ERD.</li>
+    <li>Declarative approach.</li>
+    <li>Implementing more complex structures may be hard (depends on the system).</li>
+    <li>Relational databases support <strong>ACID</strong> transactions.</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>A database is just <em>structured file management with strong guarantees added on top</em>: schema, concurrent-access locking, transactions, durability, an indexed query layer. If you don't need those guarantees, the filesystem is fine. If you need any one of them, rebuilding it yourself is almost always a mistake.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Encoding &amp; compression</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Techniques to transform information into a format efficient for storage or transmission.</p>
+  <ul>
+    <li><strong>Lossless compression</strong> &mdash; original data is fully recoverable from the compressed form (e.g. PNG, ZIP).</li>
+    <li><strong>Lossy compression</strong> &mdash; part of the data is lost (e.g. JPEG, MP3), but we can achieve far better ratios.</li>
+  </ul>
+  <h4>Selected methods (statistical)</h4>
+  <ul>
+    <li><strong>Huffman coding</strong> &mdash; assign each symbol a code based on its frequency; minimum redundancy; variable-length codes.
+      <ol>
+        <li>Sort symbols by frequency into a priority queue as nodes.</li>
+        <li>Take the two lowest-frequency nodes, merge them into a parent whose frequency = sum. Repeat until one node remains. This builds a tree.</li>
+        <li>Walk from root; left branches marked <code>0</code>, right <code>1</code>. The path from root to a leaf is that symbol's code.</li>
+      </ol>
+    </li>
+    <li><strong>Shannon-Fano</strong> &mdash; similar to Huffman, may not be optimal. Walk from the root; sort symbols by frequency and split sequentially into halves (summing frequencies; when over half, split). At each split, mark <code>0</code> and <code>1</code>. Stop when each half holds one symbol.</li>
+  </ul>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — Huffman</span>
+  <p>Source: <code>BCAADDDCCACACAC</code> &mdash; counts: A=5, B=1, C=6, D=3.</p>
+  <div class="diagram">
+              [15]
+             /    \
+          [6]      [9]
+          C=6     /   \
+                [4]    [5]=A
+               /   \
+              D=3   [1]   ← wait — corrected:
+                    /  \
+                   B=1   ...
+  </div>
+  <p>Variable-length codes for the most common symbols (C, A) are short (1&ndash;2 bits); rare symbols (B) get long codes. The prefix property &mdash; no code is a prefix of another &mdash; means no separators needed.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — practical compression</span>
+  <ul>
+    <li><strong>GZIP / DEFLATE</strong> &mdash; Huffman + LZ77 (back-references). Default web compression. <code>Content-Encoding: gzip</code> in nginx/CloudFront.</li>
+    <li><strong>Brotli</strong> &mdash; Google's successor to GZIP, ~20% better for text. Most browsers + CDNs support it.</li>
+    <li><strong>Zstandard (zstd)</strong> &mdash; Facebook's lossless compressor; tunable speed/ratio. Used in Kafka, MongoDB, ZFS.</li>
+    <li><strong>Snappy</strong> &mdash; very fast lossless, lower ratio. Default for Cassandra, HBase column blocks.</li>
+    <li>In DBs, page-level compression (Postgres TOAST, Oracle Advanced Compression) saves storage at the cost of CPU on access.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Architecture of relational databases</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p><em>Fun fact: what architecture does an RDBMS use? You won't find out in the course "Architecture of relational databases."</em></p>
+  <p>A simple architecture could look like:</p>
+  <ul>
+    <li><strong>Database server</strong>
+      <ul><li>Receives, processes, and answers requests.</li></ul>
+    </li>
+    <li><strong>Relational DBMS</strong>
+      <ul>
+        <li>Authentication, authorization.</li>
+        <li>Application running over the actual database.</li>
+        <li>Enables creating tables/indexes&hellip; data manipulation, reading&hellip;</li>
+        <li>Ensures data integrity.</li>
+        <li>Evaluates and executes SQL queries, performs internal optimisations.</li>
+        <li>May do caching.</li>
+      </ul>
+    </li>
+    <li><strong>Database</strong> &mdash; the actual place where data is stored.</li>
+  </ul>
+  <p>The RDBMS may include techniques for managing access rights (restricting operations, row/column-level visibility).</p>
+  <p>If the question means <em>what does a relational DB consist of</em>, talk about tables, columns, the SQL language for definition (DDL) and manipulation (DML), indexes, (materialised) views&hellip;</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — common RDBMS architecture layers</span>
+  <p>A typical academic breakdown of an RDBMS's internals (e.g. PostgreSQL):</p>
+  <ol>
+    <li><strong>Network / connection layer</strong> &mdash; listener, session, auth.</li>
+    <li><strong>Parser</strong> &mdash; SQL text &rarr; parse tree.</li>
+    <li><strong>Rewriter</strong> &mdash; expands views, applies rules.</li>
+    <li><strong>Planner / optimiser</strong> &mdash; produces alternative execution plans, costs them, picks the cheapest (cost-based optimisation using table statistics).</li>
+    <li><strong>Executor</strong> &mdash; runs the plan against the storage engine.</li>
+    <li><strong>Buffer manager</strong> &mdash; caches pages from disk in shared memory.</li>
+    <li><strong>Storage engine</strong> &mdash; physical layout (heap files, indexes, WAL).</li>
+    <li><strong>Transaction manager</strong> &mdash; locks, MVCC versions, WAL writing.</li>
+  </ol>
+  <p>The <strong>ANSI/SPARC three-level schema</strong> abstraction the textbooks love:</p>
+  <ul>
+    <li><strong>External</strong> level (views per user role)</li>
+    <li><strong>Conceptual</strong> level (logical schema)</li>
+    <li><strong>Internal</strong> level (physical storage)</li>
+  </ul>
+  <p>Independence between layers is the whole point of a DB &mdash; changing the physical layout (adding an index) doesn't require changing application code.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>SQL query language &amp; its parts</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>SQL is based on <a href="#relational-algebra">relational algebra</a>. It contains constructs for schema definition, data manipulation, and transactions (see the next sections).</p>
+  <p>Some systems include procedural programming (PL/SQL &mdash; e.g. Oracle).</p>
+  <p>SQL can include <strong>triggers</strong> &mdash; extra actions on certain statements (INSERT, UPDATE, DELETE). Used e.g. for maintaining a history table, or updating <code>updated_at</code> if the RDBMS doesn't do it.</p>
+  <p>When working with SQL we use <strong>prepared statements</strong> to prevent SQL injection.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — the SQL "sub-languages"</span>
+  <table>
+    <thead><tr><th>Acronym</th><th>Name</th><th>Statements</th></tr></thead>
+    <tbody>
+      <tr><td>DDL</td><td>Data Definition</td><td><code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>TRUNCATE</code></td></tr>
+      <tr><td>DML</td><td>Data Manipulation</td><td><code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code></td></tr>
+      <tr><td>DCL</td><td>Data Control</td><td><code>GRANT</code>, <code>REVOKE</code></td></tr>
+      <tr><td>TCL</td><td>Transaction Control</td><td><code>COMMIT</code>, <code>ROLLBACK</code>, <code>SAVEPOINT</code>, <code>SET TRANSACTION</code></td></tr>
+    </tbody>
+  </table>
+  <p>The exam question mentions DDL, DML, and transactions but not DCL &mdash; still worth knowing.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>DDL — Data Definition Language</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p><em>Note: different RDBMSs support different types. <code>TEXT</code> isn't in base SQL, but using fixed-length <code>VARCHAR2</code> is impractical.</em></p>
+  <p>Creating a table:</p>
+<pre class="lang-sql"><code>/* block comment */
+-- inline comment
+CREATE TABLE Products (
+    id          INT PRIMARY KEY, -- in pg you can use SERIAL so you don't manage sequences
+    cost        INT NOT NULL,
+    ean         INT UNIQUE NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT,
+    created_by  INT NOT NULL REFERENCES User(id),
+    updated_at  DATETIME
+);</code></pre>
+  <p>In practice it's better to <strong>always generate primary keys</strong> &mdash; external "unique" values may not stay unique/unchanging. Use numbers, not strings (one compare operation, faster, especially for PKs). Compound primary keys are possible but again slower.</p>
+  <p>Use <code>SERIAL</code> or <code>AUTOINCREMENT</code> for ID generation (sequences are the older way).</p>
+  <p>For date/time use <code>DATETIME</code>. If you used <code>INT</code> + Unix timestamp, in 2038 you'd have a problem.</p>
+  <p>For foreign keys we can specify <code>ON DELETE</code>:</p>
+  <ul>
+    <li><code>CASCADE</code> &mdash; deleting a user deletes their products too.</li>
+    <li><code>SET NULL</code> &mdash; sets <code>created_by</code> to <code>NULL</code> &mdash; but our <code>NOT NULL</code> would block that.</li>
+    <li>In the current setup you can't delete such a user.</li>
+  </ul>
+  <h4>Modifying a table</h4>
+<pre class="lang-sql"><code>ALTER TABLE Products ADD picture TEXT;
+ALTER TABLE Products DROP COLUMN description;
+DROP TABLE Products;</code></pre>
+  <p>You can use <code>IF EXISTS</code> / <code>IF NOT EXISTS</code> for idempotent scripts (handy while experimenting).</p>
+  <p>In production use a <strong>migration framework</strong> with UP and DOWN scripts so changes can be reverted.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — production migration tooling</span>
+  <ul>
+    <li><strong>Flyway</strong>, <strong>Liquibase</strong> &mdash; Java ecosystem standards. Versioned SQL files; Flyway records applied migrations in a <code>flyway_schema_history</code> table.</li>
+    <li><strong>Spring Boot</strong> auto-runs Flyway on startup if it's on the classpath.</li>
+    <li><strong>Prisma Migrate</strong>, <strong>Knex</strong>, <strong>Alembic</strong> (Python/SQLAlchemy) &mdash; same pattern elsewhere.</li>
+    <li><strong>Expand/contract</strong> migration pattern for zero-downtime:
+      <ol>
+        <li>Expand &mdash; add new column, keep old. Code reads both.</li>
+        <li>Migrate &mdash; backfill new column. Code writes both.</li>
+        <li>Switch &mdash; code reads new only.</li>
+        <li>Contract &mdash; drop old column.</li>
+      </ol>
+      Never do a destructive schema change in a single deploy.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>DML — Data Manipulation Language</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — INSERT</span>
+<pre class="lang-sql"><code>INSERT INTO Tabulka(sloupec_a, sloupec_b)
+VALUES (hodnota_a, hodnota_b);</code></pre>
+  <p>Integrity constraints are checked; if there's an autoincrement/serial key, you don't have to provide it. The statement usually returns the inserted row (including generated values).</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — UPDATE</span>
+<pre class="lang-sql"><code>UPDATE Tabulka
+SET sloupec_a = hodnota_a
+WHERE ...   -- often the key</code></pre>
+  <p>An <code>UPDATE</code> without <code>WHERE</code> updates everything. Integrity constraints are checked.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — DELETE</span>
+<pre class="lang-sql"><code>DELETE FROM Tabulka WHERE ...</code></pre>
+  <p><code>DELETE</code> without <code>WHERE</code> deletes everything.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — SELECT</span>
+  <p>A beefier select:</p>
+<pre class="lang-sql"><code>SELECT DISTINCT Tabulka.sloupec, B.sloupec
+FROM Tabulka
+JOIN TabulkaB AS B ON Tabulka.cizi_id = B.id
+WHERE price &gt; 0
+ORDER BY sloupec ASC</code></pre>
+  <p><em>JOIN can be rewritten as a WHERE.</em></p>
+  <p>A SELECT result can be placed in parentheses and used in place of a table &mdash; data still has a tabular structure.</p>
+  <p>Between data sets with the same structure you can use set operations: <code>UNION</code>, <code>INTERSECT</code>, <code>MINUS</code>.</p>
+  <p>In <code>WHERE</code> you can use set membership <code>IN</code>, ranges <code>BETWEEN&hellip;AND</code>, logical operators <code>AND</code>, <code>OR</code>&hellip; For strings, <code>LIKE</code> where <code>_</code> matches one character and <code>%</code> matches several.</p>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP — SQL evaluation order</span>
+  <p>The <em>written</em> order of a <code>SELECT</code> is not the <em>execution</em> order. The logical evaluation order is:</p>
+  <ol>
+    <li><code>FROM</code> + <code>JOIN</code></li>
+    <li><code>WHERE</code></li>
+    <li><code>GROUP BY</code></li>
+    <li><code>HAVING</code></li>
+    <li><code>SELECT</code> (projection)</li>
+    <li><code>DISTINCT</code></li>
+    <li><code>ORDER BY</code></li>
+    <li><code>LIMIT</code> / <code>OFFSET</code></li>
+  </ol>
+  <p>This is why you <em>can't</em> use a <code>SELECT</code>-list alias in <code>WHERE</code> &mdash; <code>WHERE</code> runs before <code>SELECT</code> &mdash; but you <em>can</em> in <code>ORDER BY</code>.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Views</span>
+  <p>A stored, named <code>SELECT</code> that runs whenever you query it.</p>
+  <ul>
+    <li>Modification through a view is limited (e.g. cannot if it contains aggregation, <code>DISTINCT</code>, <code>UNION</code>&hellip;) &mdash; better to use source tables.</li>
+  </ul>
+  <h4>Materialized view</h4>
+  <p>A view whose result is precomputed. Queries return rows directly from the underlying table, but on every change the materialized view must be recomputed (faster reads, slower writes).</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Aggregations</span>
+  <p>Used with <code>GROUP BY sloupec</code>. If <code>GROUP BY</code> is omitted, aggregates compute over the whole <code>SELECT</code>.</p>
+  <ul>
+    <li><code>COUNT(...)</code> &mdash; row count; <code>COUNT(*)</code> works.</li>
+    <li><code>AVG(...)</code></li>
+    <li><code>SUM(...)</code></li>
+    <li><code>MIN(...)</code></li>
+    <li><code>MAX(...)</code></li>
+  </ul>
+  <p><code>HAVING&hellip;</code> is like <code>WHERE</code> but allows aggregates.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — typical join + group-by</span>
+<pre class="lang-sql"><code>-- Top-selling product per category, last 30 days, only categories with &gt;100 orders.
+SELECT  c.name        AS category,
+        p.name        AS product,
+        SUM(oi.qty)   AS units
+FROM    order_items oi
+JOIN    orders   o   ON o.id = oi.order_id
+JOIN    products p   ON p.id = oi.product_id
+JOIN    categories c ON c.id = p.category_id
+WHERE   o.created_at &gt;= NOW() - INTERVAL '30 days'
+GROUP BY c.name, p.name
+HAVING  SUM(oi.qty) &gt; 0
+ORDER BY units DESC
+LIMIT 20;</code></pre>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — joins cheat-sheet</span>
+  <table>
+    <thead><tr><th>Join</th><th>Returns</th></tr></thead>
+    <tbody>
+      <tr><td><code>INNER JOIN</code></td><td>Rows matching in both sides.</td></tr>
+      <tr><td><code>LEFT [OUTER] JOIN</code></td><td>All left rows; NULL for unmatched right.</td></tr>
+      <tr><td><code>RIGHT JOIN</code></td><td>All right rows; NULL for unmatched left.</td></tr>
+      <tr><td><code>FULL OUTER JOIN</code></td><td>All rows from both; NULLs on the unmatched side.</td></tr>
+      <tr><td><code>CROSS JOIN</code></td><td>Cartesian product, no <code>ON</code> clause.</td></tr>
+      <tr><td><code>SELF JOIN</code></td><td>Same table aliased twice (e.g. employees and their managers).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================ -->
+<h2 id="relational-algebra">Relational algebra</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>A <strong>relation</strong> is a subset of the Cartesian product of domains. In a DB this becomes: domains are the data types of columns, and a table (a set of columns) contains only the combinations (rows) present in the relation.</p>
+  <p>Relational algebra consists of:</p>
+  <ul>
+    <li><strong>Set operations</strong> (for union, difference, intersection the relations must be <em>compatible</em> &mdash; same header).</li>
+    <li><strong>Projection</strong> &mdash; column selection.</li>
+    <li><strong>Selection</strong> &mdash; <code>WHERE</code>.</li>
+    <li><strong>Rename</strong> &mdash; <code>AS</code>.</li>
+    <li><strong>Join / product of relations</strong> &mdash; <code>JOIN</code>.</li>
+    <li><strong>Grouping &amp; aggregation</strong> &mdash; <code>GROUP BY</code>, <code>AVG(...)</code>&hellip;</li>
+  </ul>
+  <p>&hellip; so the individual operations correspond to SQL.</p>
+  <p>There are queries you <strong>can't</strong> express in relational algebra &mdash; e.g. the <strong>transitive closure</strong>.</p>
+  <p><em>The transitive closure over a relation is obtained by looking at elements: if <code>a</code> is related to <code>b</code> and <code>b</code> to <code>c</code>, the closure contains the relation of <code>a</code> with <code>c</code>.</em></p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — symbols you may see in exam notation</span>
+  <table>
+    <thead><tr><th>Symbol</th><th>Operation</th><th>SQL equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>&pi;<sub>cols</sub></td><td>Projection</td><td><code>SELECT col1, col2</code></td></tr>
+      <tr><td>&sigma;<sub>condition</sub></td><td>Selection</td><td><code>WHERE</code></td></tr>
+      <tr><td>&cup;, &cap;, &minus;</td><td>Union, intersect, difference</td><td><code>UNION</code>, <code>INTERSECT</code>, <code>EXCEPT</code></td></tr>
+      <tr><td>&times;</td><td>Cartesian product</td><td><code>CROSS JOIN</code></td></tr>
+      <tr><td>&#x2A1D;</td><td>Natural join</td><td><code>NATURAL JOIN</code></td></tr>
+      <tr><td>&rho;</td><td>Rename</td><td><code>AS</code></td></tr>
+    </tbody>
+  </table>
+  <p>Modern SQL <em>does</em> support transitive closure via <strong>recursive CTEs</strong> (<code>WITH RECURSIVE</code>), but that's an extension &mdash; pure relational algebra cannot express it.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Integrity constraints</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Part of DDL. They restrict what values a field can take.</p>
+  <p>E.g. <code>NOT NULL</code>, <code>UNIQUE</code>, <code>FOREIGN KEY ... REFERENCES ..(..)</code>, <code>CHECK(price &gt; 0)</code>&hellip;</p>
+  <p>Specified on the column (ideally), as an additional table-level row, or as a separate expression:</p>
+  <p><code>ALTER TABLE .. ADD CONSTRAINT ... NOT NULL (id)</code></p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — constraint taxonomy</span>
+  <dl class="def-list">
+    <dt>Entity integrity</dt>
+    <dd>Primary key: NOT NULL + UNIQUE. Every row is uniquely identifiable.</dd>
+    <dt>Domain integrity</dt>
+    <dd>Column data type + CHECK constraints + NOT NULL. Values must come from the allowed domain.</dd>
+    <dt>Referential integrity</dt>
+    <dd>Foreign keys: FK values must reference an existing row in the referenced table (or be NULL).</dd>
+    <dt>User-defined integrity</dt>
+    <dd>Anything else expressed via CHECK constraints, triggers, or application logic (e.g. "order total = sum of items").</dd>
+  </dl>
+  <p>Three normal forms you may be quizzed on:</p>
+  <ul>
+    <li><strong>1NF</strong> &mdash; each column atomic (no lists in a single field).</li>
+    <li><strong>2NF</strong> &mdash; 1NF + no partial dependency on a composite key.</li>
+    <li><strong>3NF</strong> &mdash; 2NF + no transitive dependency (non-key &rarr; non-key).</li>
+  </ul>
+  <p>Mnemonic: <em>"The key, the whole key, and nothing but the key &mdash; so help me Codd."</em></p>
+</div>
+
+<!-- ============================================ -->
+<h2>Transaction control</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Transactions in an RDBMS have <strong>ACID</strong> properties:</p>
+  <dl class="def-list">
+    <dt>Atomicity</dt>
+    <dd>The transaction's group of statements is treated as a unit; all execute, or none do.</dd>
+
+    <dt>Consistency</dt>
+    <dd>After the transaction the DB is in a consistent state; no integrity constraint is violated.</dd>
+
+    <dt>Isolation</dt>
+    <dd>The transaction is isolated from other transactions. Levels can be set; depending on the level, the transaction may error (if it tried to modify the same object as another transaction) or use locking mechanisms.</dd>
+
+    <dt>Durability</dt>
+    <dd>After the transaction completes, data is persistently stored.</dd>
+  </dl>
+  <p>Transactions are confirmed by <code>COMMIT</code>; rolled back by <code>ROLLBACK</code> (to the state before the transaction started or after the last <code>SAVEPOINT</code>).</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — isolation levels &amp; anomalies</span>
+  <p>The four standard isolation levels and which anomalies they allow:</p>
+  <table>
+    <thead><tr><th>Level</th><th>Dirty read</th><th>Non-repeatable read</th><th>Phantom read</th></tr></thead>
+    <tbody>
+      <tr><td>READ UNCOMMITTED</td><td>✅ possible</td><td>✅</td><td>✅</td></tr>
+      <tr><td>READ COMMITTED <em>(Postgres default)</em></td><td>—</td><td>✅</td><td>✅</td></tr>
+      <tr><td>REPEATABLE READ <em>(MySQL default)</em></td><td>—</td><td>—</td><td>✅ (— in MySQL/Postgres via MVCC)</td></tr>
+      <tr><td>SERIALIZABLE</td><td>—</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>Anomalies defined:</p>
+  <ul>
+    <li><strong>Dirty read</strong> &mdash; read a value another transaction wrote but hasn't committed.</li>
+    <li><strong>Non-repeatable read</strong> &mdash; same row read twice in one transaction, different values.</li>
+    <li><strong>Phantom read</strong> &mdash; same range query run twice, different rows appear (someone INSERTed).</li>
+  </ul>
+  <p>Higher isolation = stronger guarantees, more locking, lower throughput. <strong>Pick the weakest level that prevents the anomaly you actually care about.</strong></p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — transaction in JDBC</span>
+<pre><code>// Java — transferring money atomically
+try (Connection c = ds.getConnection()) {
+    c.setAutoCommit(false);
+    try (PreparedStatement debit  = c.prepareStatement(
+            "UPDATE accounts SET balance = balance - ? WHERE id = ?");
+         PreparedStatement credit = c.prepareStatement(
+            "UPDATE accounts SET balance = balance + ? WHERE id = ?")) {
+        debit.setBigDecimal(1, amount);  debit.setLong(2, fromId);
+        credit.setBigDecimal(1, amount); credit.setLong(2, toId);
+        debit.executeUpdate();
+        credit.executeUpdate();
+        c.commit();
+    } catch (SQLException e) {
+        c.rollback();
+        throw e;
+    }
+}</code></pre>
+  <p>In Spring you'd use <code>@Transactional</code> on the service method and let the proxy handle commit/rollback.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Indexing</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>An index accelerates frequent queries on a table. Queries involving the indexed column (or combination) become faster.</p>
+<pre class="lang-sql"><code>CREATE INDEX my_index ON Products (Price);</code></pre>
+  <p>Indexes can be:</p>
+  <ul>
+    <li><strong>Traditional indexes</strong> &mdash; like in books, references to rows with a given value. Can have multiple levels, various orderings, etc.</li>
+    <li><strong>Hashes</strong> &mdash; to get a simple value out of large data.</li>
+    <li><strong>B+ trees</strong> &mdash; each node contains pointers to lower nodes or values (leaf node). Values in leaves are in ascending order, nodes include interval info about their pointers/values, leaves are linked.
+      <figure><img src="../img/20230526220652.png" alt="B+ tree diagram"></figure>
+    </li>
+    <li><strong>R trees</strong> &mdash; like B+ but multi-dimensional; in 2D they're rectangles. Data sits in leaves. A parent encloses its children (in 2D, the bigger rectangle contains its children). Ideally parent rectangles take as little space as possible &mdash; the parent acts as an index that reduces the search area (<em>"look inside me!"</em>).
+      <figure><img src="../img/20230526220927.png" alt="R-tree diagram"></figure>
+      <figure><img src="../img/20230611232516.png" alt="R-tree diagram 2"></figure>
+    </li>
+  </ul>
+  <p>Further index dichotomies:</p>
+  <ul>
+    <li><strong>Dense</strong> &mdash; every row is indexed; takes more space, faster lookup.</li>
+    <li><strong>Sparse</strong> &mdash; only some rows indexed; less space, slower (the specific row must still be located).</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Think of an index as a <em>shortcut sorted by the indexed key</em>. Without one, you scan the whole table (<code>O(n)</code>). With a B+ tree, you binary-search the tree (<code>O(log n)</code>). With a hash index, you go straight to the bucket (<code>O(1)</code> average), but you can only do equality lookups, not ranges.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — what indexes to use when</span>
+  <table>
+    <thead><tr><th>Type</th><th>Good for</th><th>Bad for</th></tr></thead>
+    <tbody>
+      <tr><td>B-tree / B+-tree</td><td>Equality + range queries, ORDER BY, LIKE 'prefix%'</td><td>Low-selectivity columns (boolean), LIKE '%suffix'</td></tr>
+      <tr><td>Hash</td><td>Equality only, very fast</td><td>Ranges, sorting</td></tr>
+      <tr><td>R-tree / GiST (Postgres)</td><td>Geospatial, multi-dim ranges</td><td>1-D equality (overkill)</td></tr>
+      <tr><td>Bitmap</td><td>Low-cardinality columns in data warehouses (gender, country)</td><td>Frequently-updated tables (rebuilds are heavy)</td></tr>
+      <tr><td>Full-text / GIN</td><td>Text search</td><td>Numeric ranges</td></tr>
+      <tr><td>Partial index</td><td>"only WHERE deleted_at IS NULL" subset</td><td>—</td></tr>
+      <tr><td>Covering / INCLUDE index</td><td>Query can be answered from the index alone (no table access)</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>Cost of an index: <strong>writes pay</strong>. Every <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code> must update every index. Don't index speculatively &mdash; profile real query workloads (<code>EXPLAIN ANALYZE</code> in Postgres, <code>EXPLAIN</code> in MySQL).</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — EXPLAIN</span>
+<pre class="lang-sql"><code>EXPLAIN ANALYZE
+SELECT * FROM orders WHERE customer_id = 42 AND created_at &gt; NOW() - INTERVAL '7 days';
+
+-- Without index: Seq Scan on orders ... (cost=0..1000 rows=10) actual time=12.3 ms
+-- After CREATE INDEX idx_orders_customer_date ON orders(customer_id, created_at):
+--   Index Scan ... actual time=0.04 ms — 300× faster.</code></pre>
+  <p>A composite index on <code>(customer_id, created_at)</code> is <em>left-prefix</em> usable &mdash; it can be used for queries on just <code>customer_id</code> too, but not on just <code>created_at</code>.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Hashing</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p><strong>The goal of hashing is to convert input data of arbitrary length into output of fixed length</strong> (a fixed-length string or number) &mdash; the hash. The hash shouldn't allow deriving the input back (<strong>one-way</strong>); for each input we should deterministically (data-only) produce a single hash. We may also need to minimize collisions (two inputs producing the same hash) &mdash; though impossible to avoid completely (we map infinite possible inputs to a finite range). Depending on use, similar inputs should have wildly different hashes, so small (intentional or accidental) modifications can be detected. Hash cracking uses <strong>rainbow tables</strong> &mdash; known inputs and their hashes for a given algorithm.</p>
+  <p>Hashing is used for:</p>
+  <ul>
+    <li>Ensuring data integrity (certificates, checksums)</li>
+    <li>Fast data comparison (HashMap)</li>
+    <li>Comparing data while knowing only the hash (storing password hashes, Argon2)</li>
+  </ul>
+  <h4>Collision resistance</h4>
+  <ul>
+    <li><strong>Weak</strong> &mdash; given input A, we can't quickly find a different input B with the same hash.</li>
+    <li><strong>Strong</strong> &mdash; we can't quickly find <em>any</em> two distinct inputs with the same hash.</li>
+  </ul>
+  <p>For different purposes we use different algorithms &mdash; a balance of speed (for passwords, slowness can be desirable) and security / collision likelihood:</p>
+  <ul>
+    <li><strong>MD5</strong> &mdash; relatively fast, not secure (collisions can be found quickly on commodity hardware).</li>
+    <li>Family <strong>SHA</strong>; currently <strong>SHA-2</strong> (SHA256, SHA512, SHA-384&hellip;) is considered secure.</li>
+    <li><strong>Argon2</strong> &mdash; currently recommended for password hashing.</li>
+    <li>A (dumb but fast) hash can be the length of the input, a modulo, the sum of ASCII codes&hellip; (called <a href="dev_3_bezpecny_kod.md">CRC</a>).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — hashing inside the database</span>
+  <p>In an RDBMS, hashing is used in three places:</p>
+  <ol>
+    <li><strong>Hash index</strong> &mdash; <code>CREATE INDEX&hellip; USING HASH</code> (Postgres). Equality lookups only.</li>
+    <li><strong>Hash join</strong> &mdash; the planner builds an in-memory hash table on the smaller side, probes it with the larger side. <code>O(n + m)</code> vs nested loop's <code>O(n &times; m)</code>.</li>
+    <li><strong>Sharding / partitioning</strong> &mdash; hash of the partition key decides which shard/partition a row lives in (Cassandra, Postgres hash partitions).</li>
+  </ol>
+  <p>For password storage specifically:</p>
+  <ul>
+    <li><strong>bcrypt</strong> &mdash; adjustable cost factor; still acceptable.</li>
+    <li><strong>scrypt</strong> &mdash; memory-hard; resistant to GPU/ASIC attacks.</li>
+    <li><strong>Argon2id</strong> &mdash; current OWASP recommendation.</li>
+  </ul>
+  <p>Always combine with a per-user <strong>salt</strong> (stored alongside the hash); optionally a system-wide <strong>pepper</strong> (kept separately, e.g. in AWS KMS / Secrets Manager).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Putting it together — practical examples</h2>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — full DDL + constraints + index + transaction</span>
+<pre class="lang-sql"><code>-- 1) Schema
+CREATE TABLE customers (
+    id           BIGSERIAL PRIMARY KEY,
+    email        TEXT NOT NULL UNIQUE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE orders (
+    id           BIGSERIAL PRIMARY KEY,
+    customer_id  BIGINT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+    total_cents  BIGINT NOT NULL CHECK (total_cents &gt;= 0),
+    status       TEXT NOT NULL CHECK (status IN ('PENDING','PAID','REFUNDED','CANCELLED')),
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2) Index for the most common access pattern
+CREATE INDEX idx_orders_customer_created
+    ON orders(customer_id, created_at DESC);
+
+-- 3) Transactional write
+BEGIN;
+INSERT INTO customers (email) VALUES ('a@b.c') RETURNING id;
+INSERT INTO orders (customer_id, total_cents, status)
+       VALUES ( currval('customers_id_seq'), 1999, 'PENDING')
+       RETURNING id;
+COMMIT;</code></pre>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=zsjvFFKOm3c" target="_blank">SQL Indexing &mdash; Hussein Nasser, the GOAT of DB content</a></li>
+    <li><a href="https://www.youtube.com/watch?v=iEm1NRyEe5c" target="_blank">Huffman Coding explained &mdash; visually</a></li>
+    <li><a href="https://www.youtube.com/watch?v=GFQaEYEc8_8" target="_blank">ACID Transactions in 10 minutes (ByteByteGo)</a></li>
+    <li><a href="https://use-the-index-luke.com/" target="_blank">"Use the Index, Luke!" &mdash; Markus Winand's free indexing book (essential)</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Source for FROM REPO blocks: <a href="../5_databaze.md">5_databaze.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

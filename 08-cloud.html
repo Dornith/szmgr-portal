@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q8 Cloud Computing — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 8 &middot; <span class="course-code">PA200</span> <span class="course-code">PA234</span></div>
+  <h1>Cloud Computing</h1>
+  <p class="q-text">
+    IaaS, PaaS, SaaS cloud. Concepts and principles of designing and developing applications for deployment in the cloud.
+    Cloud services in the context of PaaS cloud, data storage services.
+    Quality assurance of applications in the cloud environment &mdash; performance, scalability, availability, security.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>materialy/PA200</code> (taught in Azure terms). I lead with the concept, give the Azure service name (since that's what the lecture cites), then map to AWS for your DevOps fluency.</div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>NIST cloud definition</li>
+  <li>Service models: IaaS/PaaS/SaaS/FaaS</li>
+  <li>Deployment models: public/private/hybrid</li>
+  <li>Compute services (IaaS, PaaS, FaaS)</li>
+  <li>Storage services</li>
+  <li>Cloud app design challenges</li>
+  <li>Availability (transient faults, multi-region)</li>
+  <li>Throughput &amp; bottlenecks</li>
+  <li>Response time</li>
+  <li>Scalability &amp; elasticity</li>
+  <li>Chaos engineering</li>
+  <li>Cost model</li>
+  <li>CI/CD for cloud apps</li>
+  <li>Azure ↔ AWS mapping</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Introduction to public cloud</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PA200 NIST definition</span>
+  <blockquote>"Cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g. networks, servers, storage, applications, and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction." &mdash; NIST</blockquote>
+  <h4>Key features (the 5 NIST essentials)</h4>
+  <ol>
+    <li>On-demand self-service</li>
+    <li>Broad network access</li>
+    <li>Resource pooling</li>
+    <li>Rapid elasticity</li>
+    <li>Measured service</li>
+  </ol>
+  <h4>Service models</h4>
+  <ul>
+    <li><strong>Software as a Service (SaaS)</strong></li>
+    <li><strong>Platform as a Service (PaaS)</strong></li>
+    <li><strong>Infrastructure as a Service (IaaS)</strong></li>
+  </ul>
+  <h4>Deployment models</h4>
+  <ul>
+    <li>Public cloud</li>
+    <li>Private cloud</li>
+    <li>Hybrid cloud</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Service model responsibility split</span>
+  <div class="diagram">
+                  On-prem          IaaS              PaaS              SaaS
+                  ─────────        ──────────        ──────────        ──────────
+Applications      you              you               you               vendor
+Data              you              you               you               vendor
+Runtime           you              you               vendor            vendor
+Middleware        you              you               vendor            vendor
+OS                you              vendor            vendor            vendor
+Virtualization    you              vendor            vendor            vendor
+Servers           you              vendor            vendor            vendor
+Storage           you              vendor            vendor            vendor
+Networking        you              vendor            vendor            vendor
+  </div>
+  <p>The further right you go, the less you manage &mdash; and the less control you have.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Contemporary providers (PA200)</span>
+  <table>
+    <thead><tr><th>Provider</th><th>Launched</th><th>Regions</th><th>Services</th></tr></thead>
+    <tbody>
+      <tr><td>Amazon Web Services</td><td>2002 (major redesign 2006)</td><td>33+ (2023)</td><td>100+</td></tr>
+      <tr><td>Microsoft Azure</td><td>2010</td><td>60+</td><td>100+</td></tr>
+      <tr><td>Google Cloud</td><td>2008</td><td>40+</td><td>100+</td></tr>
+      <tr><td>Oracle Cloud, IBM Cloud, Alibaba Cloud, OVH&hellip;</td><td colspan="3">Smaller market share but real customers in specific regions/verticals</td></tr>
+    </tbody>
+  </table>
+  <p>Origin story: <em>AWS started as Amazon offering spare compute capacity from its e-commerce datacenters; their goal was fully automated resource management. Their e-commerce solution was later redesigned to be hosted on AWS itself.</em></p>
+</div>
+
+<!-- ============================================ -->
+<h2>Compute services</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — IaaS: Virtual Machines</span>
+  <p>An IaaS service that allocates a VM in the provider's data center with Windows or Linux pre-installed. Full access to the VM.</p>
+  <p>Important to pick the VM <strong>type</strong> based on app requirements &mdash; different CPU/RAM ratios, storage perf, GPU availability:</p>
+  <ul>
+    <li>General Purpose</li>
+    <li>Compute Optimized</li>
+    <li>Memory Optimized</li>
+    <li>Storage Optimized</li>
+  </ul>
+  <h4>Provider services</h4>
+  <table>
+    <thead><tr><th>Concept</th><th>Azure</th><th>AWS</th><th>GCP</th></tr></thead>
+    <tbody>
+      <tr><td>VM + disk</td><td>Azure Virtual Machine + Azure Storage Managed Disk</td><td>Amazon EC2 + EBS</td><td>Compute Engine + Persistent Disk</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PaaS: Managed application hosting</span>
+  <p>Web / application servers managed by the cloud provider:</p>
+  <ul>
+    <li>Auto-patches and maintains the OS and language frameworks.</li>
+    <li>Developer picks a runtime (.NET, Java, Node, PHP, Python, Ruby) and deploys via a supported method.</li>
+    <li>Native CI/CD support.</li>
+    <li>Vertical and horizontal auto-scaling.</li>
+    <li>Built-in high availability.</li>
+  </ul>
+  <table>
+    <thead><tr><th>Concept</th><th>Azure</th><th>AWS</th><th>GCP</th></tr></thead>
+    <tbody>
+      <tr><td>Managed app hosting</td><td>Azure App Service (App Service Plan defines region, instance count/size, pricing tier)</td><td>Elastic Beanstalk</td><td>App Engine</td></tr>
+    </tbody>
+  </table>
+  <h4>App Service plan (Azure-specific concept)</h4>
+  <p>Defines compute resources, billing, region, number/size of VM instances, and pricing tier. Multiple apps can share one plan &mdash; cost-effective. Closest AWS analog: <strong>an ECS cluster of Fargate tasks behind one ALB</strong>, or <strong>Elastic Beanstalk environment</strong>.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PaaS: Managed containers</span>
+  <ul>
+    <li>Cloud provider manages compute infra for containerized apps.</li>
+    <li>Dev creates a Docker container, pushes to a registry; the service pulls and runs it.</li>
+  </ul>
+  <table>
+    <thead><tr><th>Concept</th><th>Azure</th><th>AWS</th><th>GCP</th></tr></thead>
+    <tbody>
+      <tr><td>Kubernetes managed</td><td>AKS (Azure Kubernetes Service)</td><td>EKS</td><td>GKE</td></tr>
+      <tr><td>Container PaaS (no k8s)</td><td>Azure Container Apps, Web App for Containers</td><td>ECS / App Runner</td><td>Cloud Run</td></tr>
+      <tr><td>Single-container "just run this"</td><td>Azure Container Instances</td><td>Fargate, App Runner</td><td>Cloud Run</td></tr>
+      <tr><td>Container registry</td><td>Azure Container Registry (ACR)</td><td>ECR</td><td>Artifact Registry</td></tr>
+      <tr><td>OpenShift managed</td><td>Azure Red Hat OpenShift</td><td>ROSA</td><td>(OpenShift Dedicated)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Serverless / FaaS</span>
+  <p>Developers deploy <em>functions</em> (methods with code) triggered by an event. The function is automatically hosted and scaled. Billed by consumed CPU time and memory.</p>
+  <p>Supported triggers: HTTP call, time (cron), message in queue, new file.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Azure</th><th>AWS</th><th>GCP</th></tr></thead>
+    <tbody>
+      <tr><td>FaaS</td><td>Azure Functions</td><td>AWS Lambda</td><td>Cloud Functions</td></tr>
+      <tr><td>Serverless containers</td><td>Container Apps</td><td>Fargate, App Runner</td><td>Cloud Run</td></tr>
+      <tr><td>Serverless DB</td><td>Azure SQL Serverless, Cosmos DB Serverless</td><td>Aurora Serverless v2, DynamoDB on-demand</td><td>Cloud Spanner, Firestore</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — when to pick what</span>
+  <p>The classic decision tree:</p>
+  <ul>
+    <li><strong>Strict OS/kernel needs, custom drivers, legacy software?</strong> &rArr; IaaS (EC2 / Azure VM).</li>
+    <li><strong>Standard web app, want zero infrastructure?</strong> &rArr; PaaS managed hosting (Elastic Beanstalk / App Service).</li>
+    <li><strong>Microservices, polyglot, complex orchestration?</strong> &rArr; managed Kubernetes (EKS / AKS / GKE) or container PaaS (ECS / Container Apps / Cloud Run).</li>
+    <li><strong>Event-driven, sporadic, want pay-per-use?</strong> &rArr; FaaS (Lambda / Functions / Cloud Functions).</li>
+    <li><strong>Don't even want to write the app?</strong> &rArr; SaaS (Salesforce, Workday, Office 365).</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Storage services</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Overview of storage in PaaS cloud</span>
+  <table>
+    <thead><tr><th>Family</th><th>Azure</th><th>AWS</th></tr></thead>
+    <tbody>
+      <tr><td>Relational DBs (PaaS)</td><td>Azure SQL Database (single, elastic pool, managed instance), Azure DB for MySQL/PostgreSQL/MariaDB</td><td>RDS (Postgres, MySQL, MariaDB, Oracle, SQL Server), Aurora</td></tr>
+      <tr><td>Binary files / objects</td><td>Azure Storage (Block Blob, Page Blob, Files, Data Lake)</td><td>S3, EFS, FSx</td></tr>
+      <tr><td>NoSQL</td><td>Azure CosmosDB (multi-API: SQL/Mongo/Cassandra/Gremlin/Table), Azure Cache for Redis</td><td>DynamoDB, DocumentDB (Mongo-compatible), Keyspaces (Cassandra), Neptune (graph), ElastiCache (Redis/Memcached)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Why a dedicated storage service?</span>
+  <ul>
+    <li>Strongly recommended to <strong>separate user data/files from the application code</strong>.</li>
+    <li>App Service / equivalent has a small persistent disk &mdash; not for user uploads.</li>
+    <li>A dedicated storage service gives you: higher capacity, defined redundancy, high availability, high throughput &amp; low latency, scalability.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Azure Storage redundancy levels</span>
+  <table>
+    <thead><tr><th>Level</th><th>Description</th><th>AWS S3 equivalent</th></tr></thead>
+    <tbody>
+      <tr><td><strong>LRS</strong> (Locally Redundant)</td><td>3 synchronous copies in <em>one</em> datacenter. 11 nines durability/year.</td><td>S3 One Zone-IA</td></tr>
+      <tr><td><strong>ZRS</strong> (Zone-Redundant)</td><td>3 copies across 3 AZs in one region (sync).</td><td>S3 Standard (which is multi-AZ by default)</td></tr>
+      <tr><td><strong>GRS</strong> (Geo-Redundant)</td><td>LRS in primary region + async replication to paired region (another 3 copies).</td><td>S3 Cross-Region Replication (CRR)</td></tr>
+      <tr><td><strong>RA-GRS</strong> (Read-Access Geo-Redundant)</td><td>GRS, plus the secondary region is readable.</td><td>S3 CRR with reader role</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Azure Blob Storage tiers (vs S3)</span>
+  <table>
+    <thead><tr><th>Azure tier</th><th>Description</th><th>S3 equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>Premium</td><td>Low &amp; consistent latency; high transaction rates.</td><td>S3 Express One Zone (or just S3 Standard with high IOPS)</td></tr>
+      <tr><td>Hot</td><td>Frequently accessed data.</td><td>S3 Standard</td></tr>
+      <tr><td>Cool</td><td>Infrequent access, 30+ day storage.</td><td>S3 Standard-IA</td></tr>
+      <tr><td>Archive</td><td>Very rare access, 180+ days.</td><td>S3 Glacier (Instant / Flexible / Deep Archive)</td></tr>
+    </tbody>
+  </table>
+  <p>Azure Blob types:</p>
+  <ul>
+    <li><strong>Block Blob</strong> &mdash; entire-block access. Maps to S3 standard objects.</li>
+    <li><strong>Page Blob</strong> &mdash; random-access (used for VM disks). Maps to EBS in AWS.</li>
+    <li><strong>Files</strong> &mdash; SMB / NFS shares, can be mounted concurrently across OSes. Maps to EFS (NFS) / FSx for SMB.</li>
+    <li><strong>Data Lake</strong> &mdash; analytics-friendly object storage. Maps to S3 + Lake Formation.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Storage account = security boundary</span>
+  <p>Azure Storage Account contains multiple types of stored data; its primary &amp; secondary keys grant full access to all stored resources!</p>
+  <ul>
+    <li>Keys must be protected &amp; stored in a trusted environment. <strong>Never expose to the client.</strong></li>
+    <li>Can be disabled and replaced by Azure AD (Entra) authentication.</li>
+    <li>Account name is part of the DNS name.</li>
+    <li>Account-level policies can block public access and enforce data protection / retention.</li>
+  </ul>
+  <p><strong>AWS analog</strong> &mdash; an S3 bucket has bucket policies, IAM, ACLs, and Block Public Access settings. Same idea: scope the trust boundary tightly and prefer IAM roles over static keys.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Designing cloud applications &mdash; challenges</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Motto</span>
+  <blockquote>Classical web applications designed for on-premise environment cannot utilize the full potential of the cloud. Result: higher operating costs.</blockquote>
+  <p><strong>Effective cloud application</strong> &mdash; deployed to the cloud and does not make wasteful use of allocated resources.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PaaS design challenges</span>
+  <ul>
+    <li><strong>Broad offer of platform services</strong> &mdash; differences from on-prem/IaaS variants.</li>
+    <li><strong>Poor availability and limited validity of design patterns and best practices</strong> &mdash; most existing patterns target on-prem / IaaS.</li>
+    <li><strong>Quality conflicts</strong> &mdash; tactics have both positive and negative effects.</li>
+    <li><strong>Multi-tenant environment</strong> &mdash; performance unpredictably affected by other tenants' workloads ("noisy neighbour").</li>
+    <li><strong>Cross-service communication latency</strong> &mdash; devs forget LAN latency in distributed cloud calls.</li>
+    <li><strong>Not all cloud services are designed to scale</strong> &mdash; some have hard throughput limits.</li>
+    <li><strong>Pay-as-you-go billing</strong> &mdash; unknown workload patterns produce unpredictable operating costs.</li>
+    <li><strong>Undocumented behaviour</strong> &mdash; some perf/availability issues aren't in the basic docs.</li>
+    <li><strong>Missing data and tools for performance modeling and prediction</strong> &mdash; current techniques target on-prem.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Quality concerns &mdash; Availability</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Availability</span>
+  <ul>
+    <li>The cloud platform offers service availability of <strong>99.95&ndash;99.99%</strong>.</li>
+    <li>Be aware of <strong>transient errors</strong> &mdash; implement detection and retry policy.</li>
+    <li>Handle user errors &mdash; damaged data, recovery procedures.</li>
+    <li>Data centre outage &mdash; design of a cross-DC cloud application requires complex tactics.</li>
+  </ul>
+  <h4>Recommendations</h4>
+  <ol>
+    <li>Use services with built-in high availability.</li>
+    <li>Handle transient faults (retry with exponential backoff).</li>
+    <li>Consider service recovery scenarios.</li>
+    <li>Design to run in a restricted mode (degraded but functional).</li>
+  </ol>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — SLA math you should know</span>
+  <table>
+    <thead><tr><th>SLA</th><th>Downtime/year</th><th>Downtime/month</th></tr></thead>
+    <tbody>
+      <tr><td>99% (two 9s)</td><td>3d 15h</td><td>7h 12m</td></tr>
+      <tr><td>99.9% (three 9s)</td><td>8h 45m</td><td>43m</td></tr>
+      <tr><td>99.95%</td><td>4h 22m</td><td>21m 36s</td></tr>
+      <tr><td>99.99% (four 9s)</td><td>52m 35s</td><td>4m 19s</td></tr>
+      <tr><td>99.999% (five 9s)</td><td>5m 15s</td><td>26s</td></tr>
+    </tbody>
+  </table>
+  <p>SLA of a composite system = <em>product</em> of component SLAs. Three services at 99.95% in series &rArr; 99.85%. Use multi-AZ / multi-region to break that.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Chaos Engineering</span>
+  <blockquote>"Chaos Engineering is the discipline of experimenting on a system in order to build confidence in the system's capability to withstand turbulent conditions in production." &mdash; <em>principlesofchaos.org</em></blockquote>
+  <p>Key principles:</p>
+  <ul>
+    <li>Build a hypothesis around steady-state behavior.</li>
+    <li>Vary real-world events.</li>
+    <li>Run experiments in production.</li>
+    <li>Automate experiments to run continuously.</li>
+    <li>Minimize blast radius.</li>
+  </ul>
+  <p>Tools: <strong>Azure Chaos Studio</strong>, <strong>Chaos Monkey</strong> (originally Netflix &mdash; the OG; on AWS now called AWS Fault Injection Service / FIS).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Quality concerns &mdash; Throughput &amp; Response Time</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Throughput</span>
+  <p>The amount of work an application must perform per unit of time &mdash; quantified as transactions / operations / requests per second.</p>
+  <p>Strongly dependent on the throughput of every component involved in request processing. <strong>Early identification of the bottleneck</strong> is critical.</p>
+  <p>Difference between <em>average</em> and <em>peak</em> throughput &mdash; you must plan for the peak.</p>
+  <h4>Tools (HTTP benchmarking &amp; load testing)</h4>
+  <ul>
+    <li><strong>Azure Load Testing</strong> &mdash; fully managed, high-scale.</li>
+    <li><strong>wrk</strong> &mdash; modern HTTP benchmarking CLI.</li>
+    <li>AWS equivalents: <strong>Distributed Load Testing on AWS</strong> (CloudFormation solution), or third-party Gatling/JMeter in CodeBuild.</li>
+  </ul>
+  <h4>Recommendations</h4>
+  <ol>
+    <li>Be familiar with the real throughput of your cloud services &mdash; every service has a limit.</li>
+    <li>Be aware of services with <strong>hard throughput limits</strong> (e.g. account-level S3 PUT rate, DynamoDB on-demand burst, RDS connection limits).</li>
+    <li>Minimize the number of service calls.</li>
+    <li>Use <strong>batch processing</strong> &mdash; can increase throughput up to <em>50&times;</em>.</li>
+  </ol>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Response Time</span>
+  <p>The latency an application exhibits in processing a business transaction. Determined by:</p>
+  <ul>
+    <li>Communication latency between services.</li>
+    <li>Request processing time at each service.</li>
+  </ul>
+  <h4>Recommendations</h4>
+  <ol>
+    <li>Minimize the number of service calls.</li>
+    <li>Merge simple calls &mdash; if you're hitting the same resource, do it in one request.</li>
+    <li>Optimize service calls &mdash; load only the necessary data.</li>
+    <li>Call services in parallel &mdash; when you have independent fetches, fire them concurrently.</li>
+  </ol>
+</div>
+
+<!-- ============================================ -->
+<h2>Quality concerns &mdash; Scalability &amp; Elasticity</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Scalability vs Elasticity</span>
+  <p><strong>Scalability</strong> &mdash; how well a solution works when problem size increases.</p>
+  <p><strong>Elasticity</strong> &mdash; the degree to which a system can adapt to workload changes by autonomically provisioning/deprovisioning resources.</p>
+  <p>Don't confuse them:</p>
+  <ul>
+    <li>Performance attributes specify behavior for a <em>static</em> instance of cloud configuration.</li>
+    <li>Elasticity is the ability to <em>change</em> that configuration in response to load.</li>
+  </ul>
+  <h4>Scalability recommendations</h4>
+  <ol>
+    <li>Design the application for <strong>stateless request processing</strong> &mdash; horizontal scaling requires it.</li>
+    <li>Distribute the load &mdash; don't over-rely on vertical scaling.</li>
+    <li>Use scalable cloud services.</li>
+    <li>Be aware of service scalability mechanics.</li>
+  </ol>
+  <h4>Elasticity recommendations</h4>
+  <ol>
+    <li>Use horizontal scalability.</li>
+    <li>Collect and process performance metrics for decision-making (auto-scale rules need signal).</li>
+    <li>Use auto-scale services where available &mdash; saves effort.</li>
+    <li>Allocate resources <em>before</em> the peak passes &mdash; warm-up time matters.</li>
+  </ol>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — auto-scaling in AWS</span>
+  <ul>
+    <li><strong>EC2 Auto Scaling Group (ASG)</strong> &mdash; min/desired/max instance count, scaling policies (target tracking on CPU/memory/custom CloudWatch metric, step scaling, scheduled).</li>
+    <li><strong>Application Auto Scaling</strong> &mdash; for ECS services, DynamoDB capacity, Aurora replicas, etc.</li>
+    <li><strong>HPA / VPA / Cluster Autoscaler</strong> in EKS.</li>
+    <li><strong>Lambda</strong> &mdash; the platform handles concurrency; you only set a max.</li>
+  </ul>
+  <p>"<em>Warm-up time matters</em>" in AWS practice: ASG default warm-up is 5 min after launch; ECS task launch from cold ECR pull can take 30&ndash;90s; Lambda cold starts depend on runtime (~100ms Node, ~1s Java without GraalVM).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Quality concerns &mdash; Costs &amp; Security</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Operation &amp; development costs</span>
+  <ul>
+    <li><strong>Operation costs</strong> &mdash; service is billed on real resource usage; how do you predict that?</li>
+    <li><strong>Development costs</strong> &mdash; multiple services offer similar features but differ in critical ways:
+      <ul>
+        <li>Storage services differ in functionality (SQL vs NoSQL).</li>
+        <li>Differences in scalability.</li>
+        <li>Integration costs depend on functionality, available libraries, tools.</li>
+        <li>Example: Azure Storage vs Azure SQL Database vs Cosmos DB &mdash; same kind of "storage," very different cost &amp; capability profiles.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — security in the cloud</span>
+  <p>The lecture doesn't have a dedicated security chapter, but cloud security has its own well-defined shape:</p>
+  <dl class="def-list">
+    <dt>Shared responsibility model</dt>
+    <dd>The provider is responsible for security <em>of</em> the cloud (the physical infra, hypervisor, managed services' internals). You're responsible for security <em>in</em> the cloud (your data, IAM, network config, code). The boundary shifts with the service model: IaaS &rArr; you do almost everything; PaaS &rArr; less; SaaS &rArr; very little.</dd>
+
+    <dt>Identity (IAM)</dt>
+    <dd>The foundation. Roles + policies, least privilege, MFA, no long-lived keys. AWS IAM, Azure AD / Entra, Google IAM. SSO via OIDC/SAML.</dd>
+
+    <dt>Encryption</dt>
+    <dd>At rest (KMS-backed) and in transit (TLS). Customer-managed keys (CMK) for compliance, provider-managed for convenience.</dd>
+
+    <dt>Network</dt>
+    <dd>VPC + subnets + security groups + NACLs. Private endpoints to keep data off the public Internet. WAF + Shield against DDoS.</dd>
+
+    <dt>Audit &amp; compliance</dt>
+    <dd>CloudTrail / Activity Logs &mdash; every API call recorded. SOC 2, ISO 27001, HIPAA, PCI &mdash; the provider's compliance carries forward into yours.</dd>
+
+    <dt>Posture management</dt>
+    <dd>AWS Security Hub / Azure Defender for Cloud / GCP Security Command Center &mdash; aggregate findings, score against benchmarks (CIS, NIST).</dd>
+  </dl>
+</div>
+
+<!-- ============================================ -->
+<h2>CI/CD for cloud applications</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Azure DevOps (PA200 Lect 9)</span>
+  <p>The five components of Azure DevOps:</p>
+  <ul>
+    <li><strong>Azure Repos</strong> &mdash; Git hosting. (≈ GitHub / GitLab repos.)</li>
+    <li><strong>Azure Pipelines</strong> &mdash; CI/CD. (≈ GitLab CI / Jenkins / GitHub Actions / CodePipeline.)</li>
+    <li><strong>Azure Boards</strong> &mdash; project tracking. (≈ Jira.)</li>
+    <li><strong>Azure Test Plans</strong> &mdash; manual + exploratory testing.</li>
+    <li><strong>Azure Artifacts</strong> &mdash; package management. (≈ Nexus / Artifactory / GitHub Packages.)</li>
+  </ul>
+  <p><strong>Why DevOps?</strong> Better feedback from users and production; breaks the wall between devs and IT ops; reduces release errors; documents the release process; gives you visibility into what the application is doing (monitoring).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Pipeline structure</span>
+  <h4>Build pipeline</h4>
+  <ol>
+    <li>Pull source code.</li>
+    <li>Restore dependencies (NuGet, Maven, npm).</li>
+    <li>Compile.</li>
+    <li>Run tests.</li>
+    <li>Publish &ne; deploy &mdash; produce a build <strong>artifact</strong> (package ready for deploy or install).</li>
+  </ol>
+  <h4>Release pipeline</h4>
+  <ul>
+    <li>Input: the build artifact.</li>
+    <li>One release may deploy to multiple <strong>environments</strong> (Dev, Staging, Production) with different configurations.</li>
+    <li>Secrets are injected at release time, not stored in Git.</li>
+    <li>Entry conditions are configurable &mdash; some envs deploy automatically, others require approval.</li>
+  </ul>
+  <h4>Provisioning environments</h4>
+  <ul>
+    <li>For large projects: <strong>Infrastructure as Code</strong> &mdash; ARM templates, Bicep (Azure-native), <strong>Terraform</strong> (multi-cloud).</li>
+    <li>Or run apps in a standardized environment &mdash; Kubernetes, Helm.</li>
+    <li>For small projects: a script you run when provisioning a new env (overkill to automate).</li>
+  </ul>
+  <h4>YAML pipelines</h4>
+  <ul>
+    <li>Pipeline as a <strong>YAML file in Git</strong> &mdash; versioned with code; branches/merges work normally.</li>
+    <li>Triggers: commit to a branch, completion of another pipeline, schedule, manual.</li>
+    <li><strong>Secrets warning</strong> &mdash; never commit them; inject them via the UI / Key Vault.</li>
+    <li>Builds run on either hosted agents (free minutes per month) or your own (VM / Docker container).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — same pipeline concepts on AWS</span>
+  <table>
+    <thead><tr><th>Azure DevOps</th><th>AWS equivalent</th><th>Jenkins/GitLab equivalent</th></tr></thead>
+    <tbody>
+      <tr><td>Azure Repos</td><td>CodeCommit (deprecated for new users; use GitHub/GitLab)</td><td>GitLab repo / Git on-prem</td></tr>
+      <tr><td>Azure Pipelines</td><td>CodePipeline + CodeBuild</td><td>Jenkins / GitLab CI</td></tr>
+      <tr><td>Azure Artifacts</td><td>CodeArtifact, ECR (containers)</td><td>Nexus, JFrog Artifactory</td></tr>
+      <tr><td>Build Artifact</td><td>S3 artifact bucket or ECR image</td><td>Jenkins workspace / GitLab artifacts</td></tr>
+      <tr><td>Release pipeline (multi-env)</td><td>CodePipeline stages with manual approval actions</td><td>GitLab environments + protected jobs</td></tr>
+      <tr><td>Hosted runner</td><td>CodeBuild project (managed)</td><td>GitLab shared runners / Jenkins cloud agents</td></tr>
+      <tr><td>Self-hosted runner</td><td>CodeBuild on EC2 / Fargate runners</td><td>GitLab Runner / Jenkins agent on EC2</td></tr>
+      <tr><td>ARM / Bicep</td><td>CloudFormation / CDK</td><td>Terraform (multi-cloud), Pulumi</td></tr>
+    </tbody>
+  </table>
+  <p>Most large orgs end up with a hybrid: code on GitHub/GitLab + Jenkins or GitLab CI for the pipeline + Terraform for infra + provider-native tools for runtime (ECS, EKS, App Service).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Case studies from the lectures</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — US Elections (Azure CTO Mark Russinovich, TechEd 2014)</span>
+  <p>System for presenting US election results. Architecture:</p>
+  <ul>
+    <li><strong>Frontend layer</strong> &mdash; Azure Web Role load balancer + N web-role VMs.</li>
+    <li><strong>Storage layer</strong> &mdash; Azure SQL DB (Results DB + Main DB).</li>
+    <li><strong>Processing layer</strong> &mdash; Worker Role VMs continuously processing results.</li>
+    <li><strong>Staging layer</strong> &mdash; Azure Blob Storage containers, precinct partitions.</li>
+  </ul>
+  <p><strong>Expected load:</strong> 6M page views in 1h peak hour = 1,667 page views/sec; each user request hits the DB 10&times; &rArr; 16,667 DB calls/sec.</p>
+  <p><strong>Problem:</strong> Azure SQL throughput limited to ~1000 req/s.</p>
+  <p><strong>Solution:</strong> Add an in-memory cache layer (worker servers hosting an in-memory cache) &mdash; throughput of storage layer increased by an order of magnitude. Result: jumped from 0.22% requests served at peak (with DB only) to 100% (with cache).</p>
+  <p><strong>AWS analog of the architectural fix</strong>: put <strong>ElastiCache (Redis)</strong> in front of RDS; configure read replicas for further read scale; if even that's not enough, consider DAX in front of DynamoDB or a CQRS pattern.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Smart Thermostats</span>
+  <p>HVAC thermostats &rarr; building router &rarr; Azure web role (synchronous HTTP) &rarr; Azure DB. Mobile UI on another web role. Email and weather as external services.</p>
+  <p><strong>Initial test failed</strong> with 35,000 connected thermostats. <strong>Goal:</strong> 100,000&ndash;150,000.</p>
+  <p><strong>Issues:</strong></p>
+  <ol>
+    <li>Synchronous HTTP handler &rarr; switched to <strong>Service Bus Queue + Worker Role</strong> for async writes.</li>
+    <li>Row-level DB updates &rarr; switched to <strong>batch updates</strong>.</li>
+    <li>Database tuning.</li>
+    <li>Queue scalability issues &rarr; resolved by <strong>partitioning</strong>.</li>
+  </ol>
+  <p><strong>AWS equivalent</strong>: thermostats &rarr; API Gateway &rarr; SQS &rarr; Lambda batch processor &rarr; DynamoDB / RDS in batch writes. Or IoT Core MQTT &rarr; Kinesis &rarr; Lambda.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Amazon product page rendering</span>
+  <p>Question from PA200: <em>Do you know how Amazon renders a product page?</em></p>
+  <p>Answer: a product page with personalized recommendations is <strong>pre-rendered as a fragment</strong> and stored in S3. The page transmitted to the user is a simple composition of pre-rendered fragments.</p>
+  <p>Why: lets read latency stay near-zero at any scale; cost of rendering is amortized.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical example — your DevOps stack</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — end-to-end cloud-native app on AWS</span>
+  <p>A typical Java/Spring service deployed on AWS, hitting every Q8 sub-topic:</p>
+  <ol>
+    <li><strong>Service model choice</strong> &mdash; ECS Fargate (PaaS-leaning containers) so you don't manage EC2. Maps to "Azure Container Apps" in PA200 terms.</li>
+    <li><strong>Storage</strong>:
+      <ul>
+        <li>RDS PostgreSQL Multi-AZ &mdash; "Azure SQL Database with built-in HA."</li>
+        <li>S3 for blobs &mdash; "Azure Blob Storage." Lifecycle rules tier old data to Glacier ("Archive").</li>
+        <li>ElastiCache Redis &mdash; "Azure Cache for Redis." Same trick as the US Elections case study.</li>
+      </ul>
+    </li>
+    <li><strong>Networking</strong> &mdash; ALB in public subnets, ECS in private. CloudFront in front of S3 + ALB.</li>
+    <li><strong>Availability</strong>:
+      <ul>
+        <li>Multi-AZ ASGs / ECS services.</li>
+        <li>Health checks &amp; circuit breakers in the app (Resilience4j).</li>
+        <li>Retry with jitter for transient errors.</li>
+        <li>Cross-region replication on critical S3 buckets ("RA-GRS").</li>
+      </ul>
+    </li>
+    <li><strong>Scalability</strong>:
+      <ul>
+        <li>ECS service auto-scaling on CPU + custom CloudWatch metric (e.g. queue depth).</li>
+        <li>RDS read replicas for read-heavy traffic.</li>
+        <li>S3 + CloudFront cope with any read scale already.</li>
+      </ul>
+    </li>
+    <li><strong>Performance &amp; cost</strong>:
+      <ul>
+        <li>Batch SQS messages where possible (50&times; throughput tip from PA200).</li>
+        <li>Cache aggressively (Redis, CloudFront).</li>
+        <li>Right-size ECS tasks; use Savings Plans / Reserved Instances for steady baseload; on-demand for peaks; spot for non-critical jobs.</li>
+      </ul>
+    </li>
+    <li><strong>CI/CD</strong> &mdash; GitLab CI:
+      <ul>
+        <li>Build &amp; test job runs in a Docker-in-Docker job.</li>
+        <li>Container pushed to ECR.</li>
+        <li>Terraform plan against staging; manual approval; apply.</li>
+        <li>ECS rolling deploy; CodeDeploy for blue/green if it's a critical service.</li>
+      </ul>
+    </li>
+    <li><strong>Observability</strong> &mdash; CloudWatch metrics + alarms; CloudWatch Logs (or OpenSearch); X-Ray traces; Grafana dashboards.</li>
+    <li><strong>Chaos engineering</strong> &mdash; AWS FIS scheduled monthly: kill a task, drop AZ network, throttle RDS.</li>
+  </ol>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP — pick your soundbite</span>
+  <p>When asked "what's different about designing for the cloud?", reach for one of these:</p>
+  <ul>
+    <li><strong>Transient failures are normal.</strong> Retry with backoff is not optional.</li>
+    <li><strong>Stateless first.</strong> Horizontal scale only works if requests don't depend on local state.</li>
+    <li><strong>Pay-per-use changes economics.</strong> Caching, batching, and "off-peak" patterns matter financially, not just for performance.</li>
+    <li><strong>The bottleneck is the slowest service in the call chain.</strong> Know your service quotas (the lecture's #1 throughput recommendation).</li>
+    <li><strong>Shared responsibility.</strong> The vendor secures the infra; you still secure your app, data, identity, network config.</li>
+  </ul>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=M988_fsOSWo" target="_blank">Cloud Computing in 100 seconds &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=jOMOmoXd6Ec" target="_blank">AWS vs Azure vs GCP &mdash; A Cloud Guru</a></li>
+    <li><a href="https://www.youtube.com/watch?v=GjQF-6-rMv4" target="_blank">12-Factor App principles explained &mdash; FreeCodeCamp</a></li>
+    <li><a href="https://www.youtube.com/watch?v=CZ3wIuvmHeM" target="_blank">Chaos Engineering with Netflix Chaos Monkey</a></li>
+    <li><a href="https://aws.amazon.com/architecture/well-architected/" target="_blank">AWS Well-Architected Framework (canonical reference)</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Sources: <code>materialy/PA200</code> (Overview, Design Challenges, IaaS, PaaS, Storage, CI/CD lectures by RNDr. David Gesvindr) &mdash; the lecture is taught in Azure terms; I've added the AWS service name beside each Azure name. The PA200 overview itself already lists AWS, Azure and GCP equivalents in many places.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

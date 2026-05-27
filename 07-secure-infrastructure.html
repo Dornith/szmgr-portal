@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q7 Secure Infrastructure — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 7 &middot; <span class="course-code">PA018</span> <span class="course-code">PA211</span> <span class="course-code">PB177</span> <span class="course-code">PA232</span></div>
+  <h1>Secure Infrastructure</h1>
+  <p class="q-text">
+    Aspects affecting system security at the level of its infrastructure, network security.
+    Cybersecurity threats and examples of attacks.
+    Design of security mechanisms, vulnerability detection, penetration testing, analysis of security attacks.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary sources: <code>materialy/PA211</code> (Cybersecurity Operations) + <code>materialy/PA018</code> (Advanced IT Security). Adjacent: <code>dev_3_bezpecny_kod.md</code> for protocol/code-side overlap.</div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Security goals &amp; requirements</li>
+  <li>Cyber threat &amp; threat mgmt</li>
+  <li>Threat intelligence (CTI)</li>
+  <li>IoCs, TTPs, ATT&amp;CK</li>
+  <li>Vulnerability management</li>
+  <li>CVE / CWE / CVSS / CPE / NVD</li>
+  <li>SCAP standard</li>
+  <li>Penetration testing</li>
+  <li>OffSec pyramid</li>
+  <li>Pen test process</li>
+  <li>System hardening</li>
+  <li>Access control (DAC, MAC, ACL)</li>
+  <li>AppArmor / SELinux</li>
+  <li>SIEM &amp; SOAR</li>
+  <li>Attack examples</li>
+  <li>Compliance frameworks</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Foundational concepts</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PA018 generic security goals</span>
+  <p>Generic security goals — protection against:</p>
+  <ul>
+    <li>access to information by unauthorized parties</li>
+    <li>modification of data by unauthorized parties</li>
+    <li>unaccountable modification/deletion/creation of data by unauthorized parties</li>
+    <li>withholding data or resources from authorized parties</li>
+    <li>false denial of a party's involvement in a given action</li>
+  </ul>
+  <p>Typical security requirements:</p>
+  <dl class="def-list">
+    <dt>Authentication</dt><dd>Originator's identity assured.</dd>
+    <dt>Integrity</dt><dd>Information received as originated.</dd>
+    <dt>Confidentiality</dt><dd>Information available only to authorized parties.</dd>
+    <dt>Availability</dt><dd>Data &amp; resources available when needed.</dd>
+    <dt>Non-repudiation</dt><dd>Party cannot deny communication (origin, receipt, delivery).</dd>
+    <dt>Access Control</dt><dd>Resources controlled by authorized parties.</dd>
+  </dl>
+  <p>The first three (Confidentiality, Integrity, Availability) form the <strong>CIA triad</strong> &mdash; the canonical exam answer when asked "what does information security try to protect?"</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Security is not just prevention</span>
+  <p>Three pillars:</p>
+  <ol>
+    <li><strong>Prevention</strong> (protection)</li>
+    <li><strong>Detection</strong></li>
+    <li><strong>Reaction</strong></li>
+  </ol>
+  <p>You can't prevent everything; you must also be able to detect compromise and react quickly. Modern security operations are dominated by detection &amp; reaction (SIEM, SOAR, IR) rather than prevention alone.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — defense in depth</span>
+  <p>The mental model: <strong>layers of fences</strong>. Network firewall, host firewall, app-level WAF, identity-based access, encrypted data, monitoring. The attacker has to bypass <em>every</em> layer; you only need <em>one</em> to catch them. Each layer is imperfect; together they're robust.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Cyber threats &amp; threat management</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PA211 cyber threat terminology</span>
+  <dl class="def-list">
+    <dt>Cyber threat</dt>
+    <dd>Circumstance or event with potential adversarial impact on operations, assets, individuals, or organizations. A <em>threat actor</em> is a source of malicious activity. Examples: SQL injection, DoS, elevation of privileges, unauthorized access, disclosure/modification of information.</dd>
+
+    <dt>Cyber threat management</dt>
+    <dd>A process that detects threats and prevents attacks using internal data (packets, logs, IP flows, scans) and external data (threat intelligence, knowledge bases). Coupled with vulnerability and asset management.</dd>
+
+    <dt>Cyber Threat Intelligence (CTI)</dt>
+    <dd>"Threat information that has been aggregated, transformed, analyzed, interpreted, or enriched to provide context for decision-making processes" (NIST). Evidence-based knowledge about hazards to assets. Contains: context, mechanisms, indicators, implications.</dd>
+  </dl>
+  <p>CTI sources:</p>
+  <ul>
+    <li><strong>OSINT</strong> &mdash; threat intelligence platforms.</li>
+    <li>Device log files.</li>
+    <li>Network traffic.</li>
+    <li>Human intelligence from incident resolution (alerts, warnings, advisories).</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Indicators of Compromise (IoC)</span>
+  <p>A piece of information that <em>objectively</em> describes an intrusion. Three flavors:</p>
+  <ul>
+    <li><strong>Atomic</strong> &mdash; can't be broken down. Examples: IP addresses, email addresses, vulnerability identifiers.</li>
+    <li><strong>Computed</strong> &mdash; derived from incident data. Examples: file hashes, regular expressions.</li>
+    <li><strong>Behavioral</strong> &mdash; collection of computed + atomic indicators, often quantified. Examples: unusual outbound traffic, user activity anomalies.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — TTPs (Tactics, Techniques, Procedures)</span>
+  <p>Describe the behavior of a threat actor.</p>
+  <ul>
+    <li><strong>Tactic</strong> &mdash; highest-level description (e.g. "privilege escalation").</li>
+    <li><strong>Technique</strong> &mdash; more detailed behavior in the context of a tactic ("vulnerability exploitation").</li>
+    <li><strong>Procedure</strong> &mdash; highly detailed steps in the context of a technique ("submit crafted input to vulnerable app").</li>
+  </ul>
+  <p>Example &mdash; network scanning:</p>
+  <ul>
+    <li>Tactic: reconnaissance.</li>
+    <li>Technique: network scanning.</li>
+    <li>Procedure: <code>nmap -sP &lt;ip_address&gt;/&lt;mask&gt;</code>.</li>
+  </ul>
+  <p>Canonical knowledge base: <strong>MITRE ATT&amp;CK</strong> &mdash; a matrix of tactics (columns) and techniques (rows), based on real-world observations. e.g. tactic <em>TA0001 Initial Access</em> contains technique <em>T1190 Exploit Public-Facing Application</em>, <em>T1566.001 Spearphishing Attachment</em>.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Pyramid of Pain</span>
+  <p>"The relationship between the types of indicators you might use to detect an adversary's activities and how much pain it will cause them when you deny those indicators." Higher in the pyramid = more painful for the attacker to change.</p>
+  <div class="diagram">
+   TTPs           ▲  Tough! (forces attacker to retrain)
+   Tools          │
+   Network/Host   │
+   Artifacts      │
+   Domain Names   │
+   IP Addresses   │
+   Hash Values    ▼  Trivial (attacker rotates daily)
+  </div>
+  <p>Detecting an attacker by their TTPs is far more durable than by IP/hash — those change instantly.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Standards &amp; enumerations for threats</span>
+  <ul>
+    <li><strong>CAPEC</strong> (Common Attack Pattern Enumeration and Classification) &mdash; hierarchical enumeration of attack categories. e.g. CAPEC-125 Flooding &rarr; CAPEC-482 TCP Flood, CAPEC-486 UDP Flood.</li>
+    <li><strong>MITRE ATT&amp;CK</strong> &mdash; adversarial tactics &amp; techniques.</li>
+    <li><strong>STIX</strong> (Structured Threat Information eXpression) &mdash; format for CTI; graph of objects (attack pattern, campaign, malware, vulnerability) and relationships.</li>
+    <li><strong>TAXII</strong> (Trusted Automated Exchange of Intelligence Information) &mdash; HTTPS-based exchange protocol for CTI; any TAXII server must support STIX.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Threat hunting, SIEM, SOAR</span>
+  <dl class="def-list">
+    <dt>Cyber threat hunting</dt>
+    <dd>Proactive security search that reveals malicious activity which evaded existing tools; identifies and categorizes potential threats <em>before</em> an attack. Targets Advanced Persistent Threats (APTs). Example: searching logs for <code>whoami</code>, <code>hostname</code>, <code>ipconfig</code> &mdash; signs of internal reconnaissance.</dd>
+
+    <dt>SIEM (Security Information and Event Management)</dt>
+    <dd>Threat detection and security incident management. Collection and analysis of security events (near-real-time and historical). Core capabilities: log/event collection, multi-source analysis, dashboards/reporting. Examples: <strong>Splunk Enterprise Security, IBM QRadar, AT&amp;T USM, Elastic Security, Apache Metron, Security Onion</strong>.</dd>
+
+    <dt>SOAR (Security Orchestration, Automation, and Response)</dt>
+    <dd>Related to <em>playbooks</em>. Streamlines security ops in three areas: threat &amp; vulnerability mgmt, incident response, security ops automation.</dd>
+  </dl>
+</div>
+
+<!-- ============================================ -->
+<h2>Vulnerability management</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Weakness vs Vulnerability vs Patch</span>
+  <dl class="def-list">
+    <dt>Weakness</dt>
+    <dd>Flaws, faults, bugs, errors in SW or HW &mdash; caused by design, architecture, or implementation. Results in vulnerabilities. Examples: Stack-based Buffer Overflow (CWE-121), Single-Factor Authentication (CWE-308), SQL Injection (CWE-89).</dd>
+    <dt>Vulnerability</dt>
+    <dd>Concrete instance of weakness in a specific asset; exploited or triggered by a threat source. Examples: Shellshock (CVE-2014-6271), Log4Shell (CVE-2021-44228), Heartbleed (CVE-2014-0160).</dd>
+    <dt>Vulnerability patch</dt>
+    <dd>A "fix" for the identified problem provided to users. Sometimes published on vendor's website; not always optimal compared to the next product release.</dd>
+  </dl>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Vulnerability management lifecycle</span>
+  <p>A process of <strong>discovering, analyzing, and mitigating</strong> vulnerabilities. Often includes tracking status of each. Vulnerability scanning is only one activity.</p>
+  <ol>
+    <li><strong>Discover</strong> &mdash; based on asset discovery. Large-scale vulnerability assessment; agent-based (Pakiti); active monitoring (Nessus, OpenVAS); passive monitoring. All use CPE to determine CVEs.</li>
+    <li><strong>Assess</strong></li>
+    <li><strong>Analyze</strong></li>
+    <li><strong>Fix</strong></li>
+    <li><strong>Measure</strong></li>
+  </ol>
+  <p>Tools: Nessus, OpenVAS, Nexpose (scanners). Full-lifecycle solutions: Qualys, Rapid7 InsightVM, Tenable.sc, F-Secure Radar.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Vulnerability Management Maturity Model (VMMM)</span>
+  <p>Application of the Capability Maturity Model to vulnerability management (SANS Institute):</p>
+  <table>
+    <thead><tr><th>Level</th><th>CMM</th><th>VMMM</th><th>Characteristics</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Initial</td><td>Incomplete</td><td>Patching</td></tr>
+      <tr><td>2</td><td>Repeatable</td><td>Performed</td><td>Scanning policy</td></tr>
+      <tr><td>3</td><td>Defined</td><td>Managed</td><td>Scan &amp; patch lifecycle</td></tr>
+      <tr><td>4</td><td>Managed</td><td>Defined</td><td>Prioritization, full lifecycle</td></tr>
+      <tr><td>5</td><td>Optimizing</td><td>Quantitatively managed / Optimizing</td><td>Attack &amp; threat centric; business context</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Enumerations &amp; data sources</span>
+  <dl class="def-list">
+    <dt>SCAP (Security Content Automation Protocol)</dt>
+    <dd>Synthesis of standards enabling automated vulnerability management. Includes enumerations (CVE, CPE, CCE), scoring systems (CVSS, CCSS), languages (OVAL).</dd>
+
+    <dt>CVE (Common Vulnerabilities and Exposures)</dt>
+    <dd>Public list of vulnerabilities. &gt;225,000 entries. Each has an identifier (<code>CVE-YYYY-NNNN</code>), description (no standardized format), references. CVEs assigned by <strong>CVE Numbering Authorities (CNAs)</strong> within their scope; top-level CNAs are MITRE and CISA ICS. Other CNAs: Google, RedHat, etc.</dd>
+
+    <dt>CWE (Common Weakness Enumeration)</dt>
+    <dd>Hierarchical enumeration of common weaknesses in SW/HW. Example: CWE-74 (Improper Neutralization / Injection) has children CWE-77 (Command Injection), CWE-81 (XML Injection).</dd>
+
+    <dt>CVSS (Common Vulnerability Scoring System)</dt>
+    <dd>Scoring system evaluating vulnerability properties. Two versions used in NVD: v3.1 and v2. v4 published end-2023.
+      <ul>
+        <li><strong>Impact metrics</strong> &mdash; confidentiality, integrity, availability (CIA).</li>
+        <li><strong>Exploitability metrics (v3.1)</strong> &mdash; attack vector, attack complexity, privileges required, user interaction.</li>
+        <li><strong>v4 adds</strong> &mdash; attack requirements (race conditions), passive vs active user interaction. More suitable for IoT/OT.</li>
+      </ul>
+      <strong>Criticism</strong> &mdash; CVSS wasn't designed for prioritization; many high-CVSS vulnerabilities have no public exploit, while less severe but exploitable ones should be prioritized first.
+    </dd>
+
+    <dt>NVD (National Vulnerability Database)</dt>
+    <dd>U.S. government repository built on CVE. Adds: impact/severity (CVSS), product info (CPE configurations), CWE reference.</dd>
+
+    <dt>CPE (Common Platform Enumeration)</dt>
+    <dd>Identifies a product/version/edition. Example: <code>cpe:2.3:o:linux:linux_kernel:*:*:*:*:*:*:*:*</code>.</dd>
+  </dl>
+</div>
+
+<!-- ============================================ -->
+<h2>Penetration testing</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Definition &amp; primer</span>
+  <p>"A method for gaining assurance in the security of an IT system by attempting to breach some or all of that system's security, using the same tools and techniques as an adversary might." &mdash; NCSC.</p>
+  <p>Synonyms: pentesting, ethical hacking, security assessment.</p>
+  <ul>
+    <li><strong>Why?</strong> To find security holes before an adversary; assess criticality and risk; report them; provide remediation ideas.</li>
+    <li><strong>Who?</strong> Internal or external. <em>Best answer for a CISO: both</em> &mdash; internal team for continuous testing, external for unbiased assessments.</li>
+    <li><strong>How often?</strong> Depends on the target. Best practice: <strong>periodically, driven by product development</strong> (not by budget cycles).</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — The Offensive Security Pyramid</span>
+  <div class="diagram">
+                Red Teaming /             ▲  Whole system incl. users &amp; defenders.
+                Adversary Emulation       │  Few limits. Vulnerability research.
+                                          │  Goal: test processes, detections, IR.
+                Penetration Testing       │  Part of system or app.
+                                          │  Substantial limits. Find &amp; exploit known.
+                                          │  Goal: test the technical implementation.
+                Vulnerability Assessment  ▼  Part of system or app.
+                                             Strong limits. Find all known &amp; assess true positives.
+                                             Easy to automate, scalable.
+  </div>
+  <p>Bottom = scalable, automated, low-impact. Top = creative, full-scope, expensive. Most engagements live in the middle (penetration testing).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Pen-testing taxonomy</span>
+  <ul>
+    <li><strong>By team</strong> &mdash; Internal vs External.</li>
+    <li><strong>By target</strong> &mdash; Web, Infrastructure, Mobile, Physical, etc.</li>
+    <li><strong>By access</strong>:
+      <ul>
+        <li><em>Black-box</em> &mdash; no prior info.</li>
+        <li><em>Grey-box</em> &mdash; some info (design, topology).</li>
+        <li><em>White-box</em> &mdash; full info (source code, technical details).</li>
+      </ul>
+    </li>
+  </ul>
+  <p><strong>Duality</strong> of a pen-test &mdash; technical plane (testing implementation, report to developers) vs social plane (main customer is executive board/management; good communication is essential).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Penetration test lifecycle</span>
+  <ol>
+    <li><strong>Preparation</strong> &mdash; defining goals and rules.
+      <ul>
+        <li><em>Goals</em> &mdash; prioritize most valuable / sensitive parts; filter unqualified, impractical or low-value client requirements.</li>
+        <li><em>Scope</em> &mdash; precise target. <strong>Violating the scope is the fastest way to lose contracts and credibility.</strong> Example: Czech Police Presidium hired a 3rd party to test their systems; the Ministry of Interior was unaware and accused the tester of intruding on <em>their</em> systems &mdash; criminal case followed.</li>
+        <li><em>Rules of Engagement</em> &mdash; time constraints, allowed techniques (social engineering?), special requirements for production, handling sensitive data, reporting rules / recovery plans / responsibility sharing for accidents, NDA.</li>
+        <li><em>Planning</em> &mdash; receive documentation, choose methodology, create test schedule.</li>
+      </ul>
+    </li>
+    <li><strong>Testing</strong>:
+      <ol>
+        <li><strong>Reconnaissance</strong> &mdash; explore system as a user, find documentation discrepancies, scan target, OSINT.</li>
+        <li><strong>Threat modeling &amp; vulnerability identification</strong> &mdash; think like an attacker; find ways to achieve goals; try to get the system into an unexpected state.</li>
+        <li><strong>Exploitation</strong> &mdash; create PoC exploit. Don't use immediately &mdash; could be damaging; consider all scenarios.</li>
+        <li><strong>Post-exploitation</strong> &mdash; use new capabilities to dig deeper; iteratively.</li>
+      </ol>
+    </li>
+    <li><strong>Reporting</strong> &mdash; informing the customer about the results.</li>
+  </ol>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Methodologies</span>
+  <p>Guidelines for different scenarios:</p>
+  <ul>
+    <li><strong>OWASP Web Security Testing Guide</strong> (and Excel checklist).</li>
+    <li><strong>Open-Source Security Testing Methodology Manual (OSSTMM)</strong>.</li>
+    <li><strong>Penetration Testing Execution Standard (PTES)</strong>.</li>
+    <li><strong>NIST 800-115</strong>.</li>
+    <li><strong>MITRE ATT&amp;CK</strong> &mdash; not a methodology per se, but summarizes well-known TTPs.</li>
+  </ul>
+  <p>Required skills: well-versed in CVEs/CWEs; exploitation experience; standard-tech knowledge (so you know what you might disrupt); soft skills; overview of privacy laws; ability to write scripts and understand code (hard-core programming not needed).</p>
+  <p>Collaboration tools: <strong>CoreImpact</strong>, <strong>CobaltStrike</strong> (built-in collab), <strong>PwnDoc</strong> (open-source collaborative reports), <strong>PenteRep</strong>.</p>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP</span>
+  <p>"Two-cents" advice from the lecture &mdash; worth quoting in an exam:</p>
+  <ul>
+    <li>If you break something, don't delay reporting it to the client.</li>
+    <li>Take notes of anything valuable.</li>
+    <li>Screenshots help, but be careful with info leakage.</li>
+    <li>Use a throwaway environment (sandbox) when possible.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>System hardening</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Definition</span>
+  <blockquote>"With system hardening, IT administrators take action to reduce the potential attack surface, leaving fewer opportunities for hackers to exploit your systems. System hardening means doing everything possible to find and fix security vulnerabilities, whether in hardware, firmware, software, applications, passwords, or processes." &mdash; Intel</blockquote>
+  <blockquote>"A process intended to eliminate a means of attack by patching vulnerabilities and turning off nonessential services." &mdash; NIST SP 800-152</blockquote>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — "Ten Commandments" of system hardening</span>
+  <p>(Intersection of CIS Controls, NIST 800-123, NSA Network Infrastructure Security Guide.)</p>
+  <ol>
+    <li>Maintain up-to-date software and operating systems.</li>
+    <li>Configure AAA (Authentication, Authorization, Accounting) and Access Control Mechanisms.</li>
+    <li>Apply the principle of <strong>least privilege</strong>.</li>
+    <li>Password management (strong, unique, not default).</li>
+    <li>Implement encryption and data backup policies.</li>
+    <li>Enable malware defense &mdash; endpoint, perimeter, app firewalls, IDS/IPS/ADS.</li>
+    <li>Disable unused ports / services / protocols / accounts / applications.</li>
+    <li>Enable log management.</li>
+    <li>Continuous monitoring and vulnerability management.</li>
+    <li>Perform security audits regularly.</li>
+  </ol>
+  <p><em>Simplification &mdash; in general you need specific rules per component to provide sufficient security.</em></p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Sources of hardening guidelines</span>
+  <ol>
+    <li><strong>Vendor guidelines</strong> &mdash; e.g. Microsoft Security Baselines, AWS Best Practices.</li>
+    <li><strong>Industry standards</strong> &mdash; CIS, NIST, ISO 27k, NSA, NÚKIB (Czech).</li>
+    <li><strong>Other</strong> &mdash; proactive (security templates) and reactive (monitoring/scanning).</li>
+  </ol>
+  <h4>Authorities</h4>
+  <dl class="def-list">
+    <dt>NÚKIB / NCISA</dt>
+    <dd>Czech National Cyber and Information Security Agency. Publishes reports, legislation, analyses, good-practice guides. <strong>Compulsory</strong> for admins of important info systems (MUNI), critical infrastructure (hospitals); recommended for the rest. Anchored in Act 181/2014 and Cybersecurity Decree 82/2018.</dd>
+
+    <dt>ISO</dt>
+    <dd>International Organization for Standardization. <strong>ISO 27k</strong> &mdash; set of standards for ISMS (Information Security Management System). 27000 (Overview) is free; the rest involve audits &amp; certification (~3000 Kč each).</dd>
+
+    <dt>NIST</dt>
+    <dd>U.S. National Institute of Standards and Technology. Two big things:
+      <ul>
+        <li><strong>NIST CSF (Cybersecurity Framework)</strong> &mdash; industry standards &amp; best practices for managing cyber risk. NIST 800-53 and 800-171 implement controls.</li>
+        <li><strong>NIST SP (Special Publications)</strong> &mdash; 200+ deep-dives covering identity, access control, response, etc.</li>
+      </ul>
+    </dd>
+
+    <dt>CIS</dt>
+    <dd>Center for Internet Security. Non-profit. Two products:
+      <ul>
+        <li><strong>CIS Benchmarks</strong> &mdash; per-OS / per-app / per-device hardening guides; industry standard (HIPAA, PCI DSS, NIST regard them).</li>
+        <li><strong>CIS Critical Security Controls (CSC)</strong> &mdash; general recommended practices.</li>
+      </ul>
+      Both are free to download.
+      <p>CIS Security Levels:
+        <ul>
+          <li><strong>Level 1</strong> &mdash; necessary basic security; doesn't interfere with functionality.</li>
+          <li><strong>Level 2</strong> &mdash; defense in depth; may restrict functionality.</li>
+          <li><strong>STIG</strong> (replaced Level 3) &mdash; DoD Security Technical Implementation Guides.</li>
+        </ul>
+      </p>
+    </dd>
+  </dl>
+  <p>ISO 27001 vs NIST CSF: complementary &mdash; "you've completed 50% of NIST CSF when you've finished ISO 27001; if you implement NIST CSF, you're 80% to ISO 27001." ISO involves audits and certification (not free); NIST CSF is voluntary (free).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Other standards you might cite</span>
+  <ul>
+    <li><strong>PCI DSS</strong> &mdash; Payment Card Industry Data Security Standard; rules for credit-card world.</li>
+    <li><strong>HIPAA</strong> &mdash; U.S. federal law protecting health information.</li>
+    <li><strong>SOC</strong> &mdash; auditing procedure ensuring service providers handle data securely (AICPA).</li>
+    <li><strong>GDPR</strong> &mdash; EU regulation on personal data.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Access control mechanisms</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Discretionary Access Control (DAC)</span>
+  <p>Owner of a resource decides who else can access it.</p>
+  <h4>Linux file permissions</h4>
+  <ul>
+    <li>Each file/directory belongs to a <strong>user</strong> and a <strong>group</strong>.</li>
+    <li>Each has three basic permissions: <code>r</code> (read), <code>w</code> (write), <code>x</code> (execute for files / traverse for dirs).</li>
+    <li>Permissions apply separately to user / group / others. Numerical: r=4, w=2, x=1. So 755 = rwxr-xr-x.</li>
+  </ul>
+  <h4>SUID / SGID</h4>
+  <ul>
+    <li><strong>SUID</strong> (4000) &mdash; effective user ID becomes the owner of the executable. <code>/usr/bin/sudo</code> is the canonical example (owned by root, SUID set, so any user gets root privileges <em>just for this binary</em>).</li>
+    <li><strong>SGID</strong> (2000) &mdash; effective group ID becomes the group of the executable.</li>
+    <li><strong>Security concern</strong> &mdash; any vuln in a SUID binary &rArr; privilege escalation. CVE-2021-3156 (sudo heap-based buffer overflow) is a real example. Hunt them: <code>sudo find / -type f \( -perm -4000 -o -perm -2000 \) -exec ls -l {} \;</code></li>
+    <li>Mitigation: mount partitions with <code>nosuid</code> or <code>noexec</code>.</li>
+  </ul>
+  <h4>Process IDs</h4>
+  <ul>
+    <li><strong>Effective ID</strong> &mdash; the one checked during permission verification.</li>
+    <li><strong>Real ID</strong> &mdash; the user who started the process.</li>
+    <li><strong>Saved ID</strong> &mdash; used when a SUID program needs to do unprivileged work.</li>
+  </ul>
+  <h4>umask</h4>
+  <p>User file-creation mode mask. <code>umask 0022</code> &rarr; new files get <code>644</code>, dirs <code>755</code>. Important for secure file creation.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Access Control Lists (ACL)</span>
+  <p>More granular than user/group/other &mdash; individual permissions for specific users and groups. Supported by Ext2/3/4, ReiserFS, BtrFS, XFS.</p>
+  <p>Commands: <code>getfacl</code> (read), <code>setfacl</code> (set).</p>
+<pre><code>$ setfacl -m g:intern2:rw example       # grant rw to group intern2
+$ getfacl example
+# file: example
+user::rw-
+group::---
+group:intern2:rw-
+mask::rw-
+other::---
+</code></pre>
+  <p><strong>Mask</strong> ACL entry &mdash; the maximum access any ACL entry (except file-owner and other) can grant.</p>
+  <p><strong>Default ACL</strong> &mdash; applied to a directory; each new object in it inherits the ACL. Works recursively.</p>
+  <h4>Shared directory pattern</h4>
+  <pre><code>$ chmod 3775 example/     # SGID + sticky bit
+# Each new object inherits the same group;
+# users can't delete each other's files (sticky bit).</code></pre>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Mandatory Access Control (MAC)</span>
+  <p>Limits abilities of processes to: access/create/delete files, execute other processes, communicate over network, allocate resources. The <em>system</em> enforces the policy &mdash; users can't override it.</p>
+  <p>Two main Linux mechanisms:</p>
+
+  <h4>AppArmor</h4>
+  <ul>
+    <li>Debian, Ubuntu, SUSE.</li>
+    <li>Profiles limit processes based on their <strong>paths</strong>.</li>
+    <li>Only processes with loaded profiles are protected.</li>
+    <li>Three modes: <strong>Enforced</strong> (block + log), <strong>Complain</strong> (only log, useful for profile dev), <strong>Unconfined</strong> (no profile).</li>
+    <li>Profiles in <code>/etc/apparmor.d/</code>.</li>
+    <li>Status: <code>sudo aa-status</code>. Generate new: <code>aa-genprof &lt;path&gt;</code>. Reapply after change: <code>apparmor_parser -r &lt;path&gt;</code>.</li>
+    <li>Docker uses AppArmor to limit containers by default (the <code>docker-default</code> profile).</li>
+  </ul>
+
+  <h4>SELinux</h4>
+  <ul>
+    <li>Red Hat Enterprise Linux family.</li>
+    <li>Assigns a <strong>security context</strong> to files, directories, processes (<em>user, role, type</em>).</li>
+    <li>Needs filesystem support to store the context.</li>
+    <li><code>ls -Z</code>, <code>ps -Z</code> reveal contexts.</li>
+    <li><code>getenforce</code> / <code>setenforce</code> &mdash; Enforcing vs Permissive.</li>
+    <li>Contexts manipulated by <code>chcon</code>, <code>restorecon</code>, <code>semanage</code>.</li>
+    <li>Can limit access to specific ports.</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — DAC vs MAC</span>
+  <p>DAC = <em>"my file, my rules"</em>. The owner of a resource controls who else can use it. Default in Linux file permissions.</p>
+  <p>MAC = <em>"the system's rules, regardless of who owns it"</em>. Even root can't override an SELinux policy without explicitly disabling it. Used in environments where you don't fully trust the owner of every file (multi-tenant systems, containers, classified data).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Cybersecurity threat examples</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PA018 history of cyber threats (Karel Obluk)</span>
+  <p>A condensed timeline you can pull examples from:</p>
+  <table>
+    <thead><tr><th>Era</th><th>Threats</th></tr></thead>
+    <tbody>
+      <tr><td>1980s&ndash;1990s</td><td>DOS viruses (file infectors, boot-sector); pre-Internet spreading (floppies); early AV uses signatures &amp; heuristics.</td></tr>
+      <tr><td>Mid-1990s</td><td>Macro viruses (Microsoft Office macros); mass infection via documents; first Linux viruses (Staog 1996, Bliss).</td></tr>
+      <tr><td>1999&ndash;2004</td><td>Worm and bot era. ILOVEYOU, Melissa &mdash; social engineering at scale. CodeRed, Nimda, Slammer &mdash; autonomous, ultra-fast worms; speed surpasses human response.</td></tr>
+      <tr><td>Mid-2000s</td><td>Web &amp; browser-based threats. Drive-by downloads; exploiting insecure plug-ins (Flash, Java); compromised websites; social-media trust vectors.</td></tr>
+      <tr><td>2007&ndash;2015</td><td>Early mobile &amp; IoT. Smartphones as sensors+identity hubs; app-store supply chain; IoT insecure-by-design; Mirai botnet precursors.</td></tr>
+      <tr><td>2007&ndash;2010s</td><td>Nation-state emerges. Estonia (2007) and Georgia (2008) DDoS; <strong>Stuxnet (2010)</strong> &mdash; ICS/SCADA no longer theoretical; Ukraine grid attacks (2015+); hybrid warfare.</td></tr>
+      <tr><td>2015&ndash;2022</td><td>Industrialization of cybercrime. <strong>Ransomware as top profit engine</strong>; credential marketplaces; access brokers; crime-as-a-service.</td></tr>
+      <tr><td>2023&ndash;present</td><td>AI-native threats. Removes barriers of skill, language, creativity. Deepfake-enabled fraud, AI-driven spear phishing at scale, "BEC 2.0" (Business Email Compromise).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Crime-as-a-Service ecosystem (PA018)</span>
+  <ul>
+    <li>Ransomware-as-a-Service</li>
+    <li>Botnets / DDoS-for-hire</li>
+    <li>Phishing-as-a-Service</li>
+    <li>Smishing / vishing kits</li>
+    <li>Outsourced money laundering</li>
+  </ul>
+  <p>Cybercrime is now a global, professional industry &mdash; estimated $1.2 trillion annual cost. Multi-billion supply chains: malware developers, access brokers, laundering networks. <strong>High profitability &rarr; high reinvestment and specialization</strong>.</p>
+  <p><strong>Double &amp; triple extortion</strong> &mdash; data theft → encryption → blackmail. Plus: data exfiltration, threats against customers/regulators, public leak sites; some groups offer "customer support."</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — code-side attack catalog</span>
+  <p>From <a href="../dev_3_bezpecny_kod.md">dev_3_bezpecny_kod.md</a> (overlaps with infrastructure):</p>
+  <ul>
+    <li><strong>Injection</strong> &mdash; inserting instructions into data evaluated without proper checks (SQL injection).</li>
+    <li><strong>Race condition</strong> &mdash; simultaneous writes to shared memory cause inconsistent state.</li>
+    <li><strong>Buffer overflow</strong> &mdash; writing past array boundaries (mainly C/C++).</li>
+    <li><strong>Type / integer overflow</strong>.</li>
+    <li><strong>Zero-day exploit</strong> &mdash; use of an unknown vulnerability with no defense available.</li>
+  </ul>
+  <p>Standardized lists:</p>
+  <ul>
+    <li><strong>CWE</strong> (Common Weakness Enumeration) &mdash; common bug categories in code.</li>
+    <li><strong>OWASP Top 10</strong> &mdash; most common web vulnerabilities.</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — canonical attack examples to memorize</span>
+  <dl class="def-list">
+    <dt>DDoS &mdash; Mirai (2016)</dt>
+    <dd>Botnet of IoT devices (mostly hijacked CCTV cameras) used to take down DynDNS, blacking out Twitter/Netflix/Reddit. Showed insecure IoT &rarr; Internet-scale weapon.</dd>
+    <dt>Supply chain &mdash; SolarWinds (2020)</dt>
+    <dd>Attackers compromised SolarWinds' build system and pushed a trojanized Orion update; ~18,000 customers (US govt agencies, Microsoft) installed the backdoor. Made "supply-chain attack" a board-level topic.</dd>
+    <dt>Ransomware &mdash; Colonial Pipeline (2021)</dt>
+    <dd>DarkSide ransomware shut down US East Coast fuel pipeline. Initial vector: leaked VPN credentials without MFA.</dd>
+    <dt>0-day in libraries &mdash; Log4Shell (CVE-2021-44228, 2021)</dt>
+    <dd>RCE in Apache Log4j via a magic JNDI lookup string in any logged input. Massive blast radius (most Java services use Log4j somewhere).</dd>
+    <dt>Cryptographic protocol &mdash; Heartbleed (CVE-2014-0160)</dt>
+    <dd>OpenSSL TLS heartbeat extension &mdash; could read arbitrary process memory (incl. private keys) by sending crafted heartbeats.</dd>
+    <dt>State-on-infrastructure &mdash; Stuxnet (2010)</dt>
+    <dd>USA/Israel attack on Iranian uranium enrichment via Siemens PLCs. Proved physical infrastructure could be sabotaged purely through software.</dd>
+    <dt>Phishing &mdash; the everyday classic</dt>
+    <dd>Most breaches (per Verizon DBIR) start with a phish.</dd>
+  </dl>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — typical attack classes by layer</span>
+  <table>
+    <thead><tr><th>Layer</th><th>Attacks</th><th>Defenses</th></tr></thead>
+    <tbody>
+      <tr><td>Network</td><td>DDoS (volumetric, protocol, application), MitM, ARP spoofing, DNS poisoning, BGP hijacking, port scanning</td><td>Firewalls, WAF, CDN, anycast scrubbing, segmentation, TLS, DNSSEC, RPKI</td></tr>
+      <tr><td>Host</td><td>Privilege escalation, rootkits, kernel exploits, fileless malware, lateral movement</td><td>OS hardening, EDR (CrowdStrike, Defender), patching, MAC (SELinux/AppArmor)</td></tr>
+      <tr><td>Application</td><td>SQLi, XSS, CSRF, SSRF, IDOR, RCE, auth bypass, deserialization</td><td>WAF, secure coding, input validation, SAST/DAST/SCA in CI</td></tr>
+      <tr><td>Identity</td><td>Credential stuffing, password spraying, phishing, MFA bypass (push fatigue, SIM swap), token theft</td><td>MFA (preferably WebAuthn / TOTP), conditional access, anomaly detection</td></tr>
+      <tr><td>Supply chain</td><td>Dependency confusion, typosquatting, compromised builds, leaked secrets in repos</td><td>Signed artifacts (Sigstore), SBOM, build provenance (SLSA), secret scanning</td></tr>
+      <tr><td>Physical / social</td><td>Tailgating, USB drops, shoulder-surfing, dumpster diving, OSINT-driven social engineering</td><td>Security awareness training, badge access, clean-desk policy</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================ -->
+<h2>Network &amp; transport security mechanisms</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — protocols (dev_3_bezpecny_kod)</span>
+  <p>Reused from the secure-code question because they're as much infrastructure as code:</p>
+  <dl class="def-list">
+    <dt>TLS / SSL</dt>
+    <dd>Cryptographic protocol between transport and application. Authenticates parties via certificates and challenge-response (mandatory for server, optional for client by default). Ensures <strong>integrity &amp; authenticity</strong> via Message Authentication Code (MAC) and <strong>confidentiality</strong> via symmetric encryption. Initial handshake uses asymmetric crypto to exchange a symmetric session key; the rest of the traffic uses that symmetric key. SSL is the deprecated predecessor; use TLS 1.2+.</dd>
+
+    <dt>IPSec</dt>
+    <dd>On the network layer; added to IPv4, mandatory in IPv6. Per IP datagram: sender authentication (header + data hashed with a shared secret in the AH header), data integrity, confidentiality (symmetric encryption in ESP), replay protection (MAC + sequence number). Modes: <strong>transport</strong> (end-to-end, no NAT-friendly) and <strong>tunnel</strong> (entire datagram becomes payload, new IP header).</dd>
+
+    <dt>SSH</dt>
+    <dd>Remote login + tunneling. Symmetric encryption after handshake; mutual authentication via key pairs. Standard for managing UNIX boxes; widely used for sftp, port forwarding, jump hosts.</dd>
+
+    <dt>SAML / OIDC</dt>
+    <dd><strong>SAML</strong> &mdash; XML-based; old enterprise SSO. <strong>OIDC</strong> (OpenID Connect on top of OAuth 2.0) &mdash; modern. Both enable identity-federated access to many apps with one identity provider (Okta, Azure AD, AWS IAM Identity Center).</dd>
+  </dl>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — network-layer defenses you'll be expected to know</span>
+  <ul>
+    <li><strong>Firewalls</strong>
+      <ul>
+        <li><em>Stateless / packet-filter</em> &mdash; decides based on 5-tuple alone.</li>
+        <li><em>Stateful</em> &mdash; tracks connection state, allows return packets.</li>
+        <li><em>NGFW (Next-Generation Firewall)</em> &mdash; adds DPI, app awareness, IDS/IPS, TLS inspection.</li>
+        <li><em>WAF (Web Application Firewall)</em> &mdash; HTTP-level, blocks OWASP-class attacks. AWS WAF, Cloudflare, F5.</li>
+      </ul>
+    </li>
+    <li><strong>IDS / IPS</strong> &mdash; Intrusion Detection / Prevention System (Snort, Suricata, Zeek for IDS).</li>
+    <li><strong>Network segmentation</strong> &mdash; VLAN at L2, subnets + security groups + NACLs in cloud VPCs. Containment when a host is compromised.</li>
+    <li><strong>Zero Trust</strong> &mdash; "never trust, always verify." Authenticate every request, even from inside the network. BeyondCorp (Google), Tailscale, Cloudflare Access.</li>
+    <li><strong>VPN</strong> &mdash; IPsec or WireGuard or TLS-based; encrypts traffic across untrusted networks.</li>
+    <li><strong>DDoS mitigation</strong> &mdash; CDN (Cloudflare, CloudFront), AWS Shield, scrubbing centers, anycast.</li>
+    <li><strong>DNS hardening</strong> &mdash; DNSSEC (signed records), DNS-over-HTTPS / DNS-over-TLS (encrypted lookups).</li>
+    <li><strong>BGP security</strong> &mdash; RPKI (Resource Public Key Infrastructure) to prevent route hijacks.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Putting it together — design of secure systems</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — design principles examiners want you to name</span>
+  <dl class="def-list">
+    <dt>Defense in depth</dt>
+    <dd>Multiple independent layers. No single control is the last line of defense.</dd>
+    <dt>Least privilege</dt>
+    <dd>Each process / user gets only the access strictly required. Default-deny.</dd>
+    <dt>Fail securely</dt>
+    <dd>If something fails (e.g. auth service is down), default to denying access, not allowing it.</dd>
+    <dt>Separation of duties</dt>
+    <dd>No single individual can perform critical actions alone. "Two-person rule."</dd>
+    <dt>Secure defaults</dt>
+    <dd>Out-of-the-box config should be secure; opting in to insecurity, not out of it.</dd>
+    <dt>Economy of mechanism</dt>
+    <dd>Keep security designs as simple as possible (Saltzer &amp; Schroeder, 1975). Complexity = attack surface.</dd>
+    <dt>Complete mediation</dt>
+    <dd>Every access to every resource is checked, not cached and reused.</dd>
+    <dt>Open design</dt>
+    <dd>Security shouldn't depend on the obscurity of the design (Kerckhoffs's principle for crypto).</dd>
+    <dt>Psychological acceptability</dt>
+    <dd>Security shouldn't make legitimate use significantly harder &mdash; or users will work around it.</dd>
+  </dl>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — your DevOps toolchain mapped to infra security</span>
+  <table>
+    <thead><tr><th>Concern</th><th>Tools you'd use</th></tr></thead>
+    <tbody>
+      <tr><td>IaC scanning</td><td><code>tfsec</code>, <code>checkov</code>, <code>tflint</code> in Jenkins/GitLab CI</td></tr>
+      <tr><td>Image scanning</td><td>Trivy, Grype, Snyk, AWS ECR scanning</td></tr>
+      <tr><td>Secrets in repos</td><td>gitleaks, trufflehog; GitHub/GitLab secret scanning</td></tr>
+      <tr><td>Secrets at runtime</td><td>HashiCorp Vault, AWS Secrets Manager, Parameter Store</td></tr>
+      <tr><td>SAST</td><td>SonarQube, Semgrep, Snyk Code</td></tr>
+      <tr><td>DAST</td><td>OWASP ZAP, Burp Suite, Nuclei</td></tr>
+      <tr><td>SCA (deps)</td><td>OWASP Dependency-Check, Snyk Open Source, Dependabot, Renovate</td></tr>
+      <tr><td>Container runtime</td><td>Falco, AWS GuardDuty</td></tr>
+      <tr><td>SIEM</td><td>Elastic, Splunk, AWS Security Hub + CloudWatch Logs</td></tr>
+      <tr><td>Pentesting (manual)</td><td>Kali, Metasploit, Burp, nmap</td></tr>
+      <tr><td>Vulnerability scanning</td><td>OpenVAS, Nessus, AWS Inspector</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical example — end-to-end</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — securing a typical Java/AWS stack</span>
+  <p>Imagine an internal Java/Spring service deployed on ECS, fronted by ALB, backed by RDS &mdash; how do you actually harden it?</p>
+  <ol>
+    <li><strong>Network</strong>
+      <ul>
+        <li>Private subnets for ECS &amp; RDS; only ALB in public subnets.</li>
+        <li>Security groups: ALB allows 443 from 0.0.0.0/0; ECS allows 8080 only from the ALB SG; RDS allows 5432 only from ECS SG.</li>
+        <li>NACLs as the second perimeter line.</li>
+        <li>VPC Flow Logs &rarr; CloudWatch for forensics.</li>
+        <li>AWS WAF on the ALB with OWASP Core Rule Set.</li>
+        <li>Shield Standard (free DDoS); Shield Advanced for high-risk apps.</li>
+      </ul>
+    </li>
+    <li><strong>Identity / AAA</strong>
+      <ul>
+        <li>IAM roles with least-privilege policies for the ECS task; no long-lived AWS keys.</li>
+        <li>Application auth: OIDC via Cognito / Okta; MFA mandatory.</li>
+        <li>RDS auth: IAM DB authentication or short-lived credentials from Secrets Manager.</li>
+      </ul>
+    </li>
+    <li><strong>Encryption</strong>
+      <ul>
+        <li>TLS 1.3 at ALB; ACM-managed certs auto-renewed.</li>
+        <li>RDS encryption at rest with KMS; S3 buckets encrypted (KMS, default SSE-S3 at minimum); EBS encryption on.</li>
+        <li>Secrets in AWS Secrets Manager; never in env vars or code.</li>
+      </ul>
+    </li>
+    <li><strong>Hardening</strong>
+      <ul>
+        <li>Container images built FROM a minimal base (distroless, Alpine, or Amazon Linux 2023); patched in CI.</li>
+        <li>Non-root user inside the container.</li>
+        <li>Read-only root filesystem where possible.</li>
+        <li>CIS Benchmark for EKS (if Kubernetes).</li>
+      </ul>
+    </li>
+    <li><strong>CI/CD</strong>
+      <ul>
+        <li>SAST (SonarQube) + SCA (Dependabot) + container scan (Trivy) + IaC scan (checkov, tfsec) gate the merge.</li>
+        <li>Signed commits; signed container images (Cosign).</li>
+        <li>Pipeline runs in an isolated runner; minimal AWS IAM role.</li>
+      </ul>
+    </li>
+    <li><strong>Detection &amp; response</strong>
+      <ul>
+        <li>GuardDuty enabled (network + DNS + cloud trail anomaly detection).</li>
+        <li>CloudTrail to S3 + Athena; access logs from ALB; app logs structured JSON.</li>
+        <li>Security Hub aggregates findings; routed to Slack / PagerDuty.</li>
+        <li>Runbooks for typical incidents; tabletop exercises quarterly.</li>
+      </ul>
+    </li>
+    <li><strong>Audit</strong>
+      <ul>
+        <li>Annual external pentest (OSSTMM/PTES-aligned).</li>
+        <li>Continuous vuln scans (Inspector + Trivy).</li>
+        <li>Quarterly patch &amp; CVE review.</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP — Verizon DBIR 2021 stat from the lecture</span>
+  <p>"The majority of successful organizational breaches (90%) and incidents (50%) happen on the <strong>web application layer</strong>." Within that: SQL injection (33%), Remote Execution (30%), XSS (57%). Cite this when asked where to invest defensive effort.</p>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=inWWhr5tnEA" target="_blank">Zero Trust Architecture &mdash; ByteByteGo</a></li>
+    <li><a href="https://www.youtube.com/watch?v=Y8bU5pCMxBA" target="_blank">How TLS works visually &mdash; Computerphile</a></li>
+    <li><a href="https://www.youtube.com/watch?v=oNwUVMZLqYE" target="_blank">Heartbleed explained &mdash; Computerphile</a></li>
+    <li><a href="https://www.youtube.com/watch?v=Cu05UVKQVOE" target="_blank">MITRE ATT&amp;CK in 20 minutes</a></li>
+    <li><a href="https://www.youtube.com/watch?v=N0THpAniBhM" target="_blank">Practical penetration testing &mdash; The Cyber Mentor</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Sources: <code>materialy/PA211</code> (Cybersecurity Operations lectures &mdash; Intro, Vulnerability Mgmt, Threat Mgmt, Pen Testing, Hardening, Access Control) + <code>materialy/PA018</code> (Advanced IT Security &mdash; Intro / generic goals, Malware threats / history) + <a href="../dev_3_bezpecny_kod.md">dev_3_bezpecny_kod.md</a> for protocol-level overlaps.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

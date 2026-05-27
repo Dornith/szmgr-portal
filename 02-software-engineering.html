@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q2 Software Engineering — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 2 &middot; <span class="course-code">PA017</span></div>
+  <h1>Software Engineering</h1>
+  <p class="q-text">
+    Software life cycle, software development process and software development management.
+    (Rational) Unified Process (UP, RUP), agile methodologies and principles of agile software development.
+    Deployment and operation of software systems.
+    Maintenance of software systems, reusability.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>3_softwarove_inzenyrstvi.md</code></div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>SW life cycle</li>
+  <li>Waterfall model</li>
+  <li>Incremental model</li>
+  <li>Spiral model</li>
+  <li>Prototyping</li>
+  <li>V-model</li>
+  <li>RUP / UP</li>
+  <li>Agile principles</li>
+  <li>SCRUM (roles, artefacts, events)</li>
+  <li>Extreme programming</li>
+  <li>Deployment &amp; operation</li>
+  <li>Maintenance &amp; reusability</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Software life cycle &amp; development process</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Every model contains in some form the phases <em>analysis</em>, <em>design</em>, <em>implementation</em>, <em>testing</em>, and <em>operation</em> (including deployment). Models differ in <strong>whether and how they split the project into more digestible parts</strong>, and consequently in how development is managed.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Every lifecycle model is an answer to one question: <strong>how do we slice the work to manage risk and feedback?</strong> Waterfall does one big slice (you find out everything was wrong at the end). Iterative models do many small slices (you find out something was wrong every few weeks and can change). The cost of late discovery is what these models optimize against.</p>
+</div>
+
+<h3>Waterfall</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Consists of strictly ordered phases:</p>
+  <ul>
+    <li><strong>Analysis</strong>
+      <ul>
+        <li>Collecting customer requirements.</li>
+        <li>Distinguish what the customer says they need from what they actually need. Watching how the end user works with the current solution helps.</li>
+        <li>We care about <em>what</em> and <em>why</em>; customers often mention <em>how</em>. Ask <em>why</em> &mdash; might be a legitimate reason, might be ignorance.</li>
+        <li>Deliverables: feasibility study, requirements document.</li>
+      </ul>
+    </li>
+    <li><strong>Design</strong> &mdash; architecture, units, technologies, test plan. Deliverables: UML diagrams, wireframes, prototypes.</li>
+    <li><strong>Implementation</strong> &mdash; build the system per the design.</li>
+    <li><strong>Testing</strong></li>
+    <li><strong>Operation</strong></li>
+  </ul>
+  <p>i.e. first collect <strong>all</strong> requirements, then design, implement, test, and deploy the SW as a whole.</p>
+  <p><strong>Pros</strong> &mdash; easy to manage; cheapest <em>if</em> everything goes smoothly.<br>
+  <strong>Cons</strong> &mdash; usually nothing goes smoothly; poor reaction to change (you have to go back to earlier phases); customer can't define what they need up front, completely and accurately; in practice the order is rarely followed (we want to test during dev, show progress to impatient customers&hellip;).</p>
+</div>
+
+<h3>Incremental model</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Project is split into <strong>increments</strong> developed and delivered in sequence; each gets a simple high-level analysis.</li>
+    <li>Increments are developed in priority order.</li>
+    <li>After deployment of an increment, we have customer feedback on it.</li>
+  </ul>
+  <p><strong>Pros</strong>
+    <ul>
+      <li>System delivered in parts &rArr; total cost distributed.</li>
+      <li>No need for a huge team &mdash; work arrives in chunks.</li>
+      <li>User sees the system early. Reaction to feedback is fast.</li>
+      <li>Change is detected earlier and is cheaper to introduce (just add a change-increment).</li>
+    </ul>
+  </p>
+  <p><strong>Cons</strong>
+    <ul>
+      <li>Total dev cost is high because of partial deliveries.</li>
+      <li>Demanding planning to distribute work.</li>
+      <li>Modules developed across phases must be glued together &mdash; interfaces must be described thoroughly.</li>
+    </ul>
+  </p>
+</div>
+
+<h3>Spiral</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <figure><img src="../img/20230607122950.png" alt="Spiral model diagram"></figure>
+  <ul>
+    <li>Combination of iterations and waterfall, with emphasis on <strong>risk analysis</strong>.</li>
+    <li>Development proceeds in cycles, each with several phases:
+      <ul>
+        <li>Analysis</li>
+        <li>Design</li>
+        <li>Implementation</li>
+        <li>Testing, feedback, plan for the next cycle &mdash; feedback feeds into the next cycle.</li>
+      </ul>
+    </li>
+    <li>Unlike the incremental model, you don't have to have a deployed piece after each iteration (the increment may be requirements, a design, etc.).</li>
+    <li>Cycles are applied to individual waterfall phases too.</li>
+    <li>Better for handling uncertainty &mdash; but slower.</li>
+  </ul>
+</div>
+
+<h3>Prototyping</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Build a prototype to understand how the customer wants to use the system and what they expect.</li>
+    <li>After analysing the prototype we throw it away and start work on the real system using an appropriate model.</li>
+  </ul>
+</div>
+
+<h3>"Researcher" / Code-and-fix model</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Design and implement. Works? Great. Doesn't? Back to design/implementation.</li>
+    <li>Hard to manage, no documentation, contributors are hard to replace &mdash; it's experimentation.</li>
+  </ul>
+</div>
+
+<h3>V-process model</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Waterfall-like, but it also depicts the testing levels for each phase (unit, integration, system, user, acceptance&hellip;).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED</span>
+  <p>The V-model pairs each <em>build</em> phase with a corresponding <em>verify</em> phase along the V's two limbs:</p>
+  <div class="diagram">
+Requirements       ────────────────       Acceptance test
+   System design   ──────────────       System test
+      Architecture ────────────       Integration test
+         Module    ──────────       Unit test
+                       ▼
+                  Implementation
+  </div>
+  <p>The point is that <em>each design level is paired with the test level that validates it</em> &mdash; you write the acceptance test in the requirements phase, not the test phase.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Independent of the model: set up communication, define and use a ubiquitous language. To manage anything we need information about current state, plan adherence, expected changes, problems&hellip;</p>
+  <p>The main SW project management methodologies are <strong>predictive (e.g. RUP)</strong> and <strong>agile (e.g. Scrum)</strong>.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Rational Unified Process (UP, RUP)</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Rigid; emphasis on processes.</li>
+    <li>Suitable when requirements are clear and firm; variable aspects can be time and resources.</li>
+    <li>Requires substantial up-front planning.</li>
+    <li>Iterative and incremental; activities (planning, requirements, modelling, design, dev, testing, deployment) partially overlap.</li>
+    <li>Driven by risks and use-case requirements.</li>
+    <li>Architecture is central &mdash; there's an architecture team that other teams consult; it serves as a central communication hub (better than many dev teams talking to each other).</li>
+    <li>Allows tight control over processes and team.</li>
+    <li>Good when you need proper documentation (UML diagrams).</li>
+    <li>Suited for large, heterogeneous products and large teams.</li>
+  </ul>
+  <p><strong>Pros</strong>
+    <ul>
+      <li>Customer not needed during development; the product is anchored in the contract (they know exactly what they'll get).</li>
+    </ul>
+  </p>
+  <p><strong>Cons</strong>
+    <ul>
+      <li>Fixed deadlines, budget, and functionality (in reality deadline and budget shift somewhat).</li>
+      <li>Change requests are a problem.</li>
+      <li>More planning time required.</li>
+      <li>Complex contract &mdash; everything must be considered (exhaustive acceptance criteria, penalties&hellip;).</li>
+    </ul>
+  </p>
+  <figure><img src="../img/20230523215135.png" alt="RUP phases diagram"></figure>
+  <p>Iterations are grouped into <strong>phases</strong>:</p>
+  <dl class="def-list">
+    <dt>Inception (1 iteration)</dt>
+    <dd>Feasibility, key requirements, risks. Description of significant requirements affecting architecture. Actor identification. Identifying other systems we must communicate with. By the end we know goals, rough architecture, what's used for similar systems, our experiences, chosen technologies, rough price, schedule, and risks. ⇒ <strong>Project brief</strong>.</dd>
+
+    <dt>Elaboration (2 iterations)</dt>
+    <dd>Requirements, architecture; play with UML. End state: architecture and a design that reflects requirements.</dd>
+
+    <dt>Construction (4 iterations)</dt>
+    <dd>Building the system, testing, deploying. End state: beta &mdash; relatively stable, tested, ready to be used.</dd>
+
+    <dt>Transition (2 iterations)</dt>
+    <dd>Bug hunting, manuals, consultations. User testing (beta &rarr; change requests), acceptance tests.</dd>
+  </dl>
+  <p>An iteration shouldn't exceed 3 months. The output of an iteration is an <strong>increment</strong>. Each iteration includes workflows (more or less present), each using particular UML diagrams:</p>
+  <ul>
+    <li><strong>Business modelling</strong> &mdash; activity diagram</li>
+    <li><strong>Requirements</strong> &mdash; use-case diagram</li>
+    <li><strong>Analysis and design</strong> &mdash; sequence, collaboration diagrams</li>
+    <li><strong>Implementation</strong> &mdash; class, object, component diagrams</li>
+    <li><strong>Testing</strong> &mdash; use case, class, activity diagrams</li>
+    <li><strong>Deployment</strong> &mdash; deployment diagram</li>
+  </ul>
+  <p>RUP is a concrete methodology built on UP (adding team roles, responsibilities, concrete procedures&hellip;). UP is the generic framework.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>RUP is "<strong>structured agility</strong>": you iterate (like agile), but each iteration produces formal artefacts (UML, docs) &mdash; the rigor of waterfall in micro-cycles. It survives in regulated industries (medical, defence, aerospace) where you must <em>prove</em> you considered things up front.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Agile methodologies &amp; principles</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Flexible; emphasis on people.</li>
+    <li>Prefer reacting to change over sticking rigidly to a plan.</li>
+    <li>Try to fix time and resources; functionality is variable (<em>"We built the house and fence; budget left for a garage or a pool. Which do you want?"</em>).</li>
+    <li>Good when requirements change, the final shape isn't clear, or the customer wants something tangible relatively soon ⇒ no precise finish date.</li>
+    <li>Requires minimal upfront planning.</li>
+    <li>Communication and collaboration are key.</li>
+    <li>Automated testing.</li>
+    <li>Variable functionality (when time/money runs out we ask the customer to add or drop things).</li>
+    <li>Face-to-face communication, quick meetings &mdash; faster and clearer.</li>
+    <li>Simple documentation &mdash; docs have a hard time keeping up with reality, so keep them simple and ideally tied to code.</li>
+    <li>Frequent stakeholder meetings (sprint review), demonstrating new functionality (better than describing it).</li>
+    <li>e.g. <strong>Extreme Programming (XP)</strong> &mdash; takes proven practices to extremes (reviews work? do them as much as possible).
+      <ul>
+        <li>Pair programming, emphasis on tests, refactoring, code is the single source of truth (generate docs from code, use schemas to generate other things&hellip;).</li>
+        <li>Fast feedback, simplicity, small increments.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Agile Manifesto (2001)</span>
+  <p>The four value pairs:</p>
+  <ul>
+    <li>Individuals and interactions <em>over</em> processes and tools</li>
+    <li>Working software <em>over</em> comprehensive documentation</li>
+    <li>Customer collaboration <em>over</em> contract negotiation</li>
+    <li>Responding to change <em>over</em> following a plan</li>
+  </ul>
+  <p>"That is, while there is value in the items on the right, we value the items on the left more."</p>
+  <p>The 12 principles include: <em>welcome changing requirements even late</em>; <em>deliver working software frequently (weeks, not months)</em>; <em>sustainable pace</em>; <em>regular reflection and adjustment</em>. If asked "what is agile?", citing the manifesto is the canonical answer.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>SCRUM</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Most commonly used agile methodology.</li>
+    <li>Iterative, incremental.</li>
+    <li>Simple; expects to be combined with other tools/processes.</li>
+    <li>Good for smaller teams (&le;15).</li>
+    <li>Good when you have a relatively self-directed team and need to produce <em>something</em> quickly.</li>
+  </ul>
+</div>
+
+<h3>Roles</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <dl class="def-list">
+    <dt>Product owner</dt>
+    <dd>Represents stakeholders, has the best overview of requirements, manages the product backlog.</dd>
+    <dt>Scrum master</dt>
+    <dd>Responsible for enforcing Scrum and solving process issues.</dd>
+    <dt>Development team</dt>
+    <dd>3&ndash;9 people; self-sufficient (all skills covered) and self-organising; manages the sprint backlog; responsible for delivering the product.</dd>
+  </dl>
+</div>
+
+<h3>Artefacts</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Product backlog</span>
+  <ul>
+    <li>Contains all remaining required functionality as <strong>user stories</strong>.
+      <ul>
+        <li>A unit of functionality, testable, a logical whole.</li>
+        <li>Each story has:
+          <ul>
+            <li><strong>Story points</strong> representing time effort estimated by <em>planning poker</em>.</li>
+            <li>Acceptance criteria (testable, formulated as <em>Given&hellip;When&hellip;Then&hellip;</em>).</li>
+            <li>May have a risk list.</li>
+            <li><strong>Priority (MoSCoW)</strong> by value, effort, risk, benefit&hellip;
+              <ul>
+                <li><strong>Must</strong> &mdash; essential</li>
+                <li><strong>Should</strong> &mdash; ought to have</li>
+                <li><strong>Could</strong> &mdash; nice to have</li>
+                <li><strong>Won't / Wish</strong> &mdash; forget it, maybe later</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>For testing, you can use Gherkin / Cucumber (<em>As a&hellip; I can&hellip; So that&hellip;</em>).</li>
+      </ul>
+    </li>
+    <li>Built by the whole Scrum team, managed by the product owner.</li>
+    <li>In practice, a board (physical/virtual) of sticky notes.</li>
+  </ul>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Sprint backlog</span>
+  <ul>
+    <li>Subset of the product backlog (a set of user stories) to be done in this sprint.</li>
+    <li>Stories are split into tasks; each has an estimate in hours.</li>
+    <li>Each task has phases Todo, In progress, Done.</li>
+    <li>Devs pick tasks themselves; no stories (or tasks) may be added/removed mid-sprint &mdash; you'd have to cancel the entire sprint (the product owner does that).</li>
+    <li>Managed by the dev team.</li>
+  </ul>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Product increment</span>
+  <ul>
+    <li>All product-backlog items completed during the sprint (i.e. what gets done in the sprint).</li>
+    <li>Built by the dev team, tested by the customer, may be released by the product owner.</li>
+    <li>Must be usable and meet the team's <em>definition of done</em>.</li>
+  </ul>
+</div>
+
+<h3>Events</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <dl class="def-list">
+    <dt>Project planning</dt>
+    <dd>Create the <em>project charter</em>. Build the product backlog. Pick key strategies (communication, risks, change management, quality&hellip;).</dd>
+
+    <dt>Sprint planning</dt>
+    <dd>Start of sprint, ~8 hours. Whole Scrum team. Set the sprint goal (what we want to deliver), pick items from the product backlog, assign tasks.</dd>
+
+    <dt>Sprint</dt>
+    <dd>Iteration focused on developing the sprint backlog. Goal: produce a usable, potentially releasable increment. Whole team participates. PO handles comms, devs dev, scrum master watches process. Analysis, design, implementation, testing. Max 1 month; all sprints are the same length. After the sprint we track <em>team velocity</em>; better future estimates, possibly resize the sprint backlog.</dd>
+
+    <dt>Daily Scrum (standup)</dt>
+    <dd>15 minutes, every day; devs and maybe the scrum master. <em>What did I do yesterday, what will I do today, did I hit any problems?</em></dd>
+
+    <dt>Sprint review</dt>
+    <dd>4 hours; whole team + key stakeholders (customer, user). Demo the increment. Discuss issues, changes, questions. Discuss possible product-backlog changes. Possibly recompute the projected finish date. Discuss what to do next; adjust priorities/order.</dd>
+
+    <dt>Sprint retrospective</dt>
+    <dd>3 hours; Scrum team. Address processes (work distribution, goal met, anything to improve?), relationships (was it smooth? need closer collaboration?), tools (good communication? enough transparency?), people (anyone struggle? anyone to praise?). Aim for one process improvement to use next sprint. Possibly adjust key strategies, risks.</dd>
+
+    <dt>Project retrospective</dt>
+    <dd>Closing the project with the team. Lessons learned, what worked, what didn't&hellip; Thanks all round.</dd>
+  </dl>
+</div>
+
+<h3>When SCRUM can end</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Product backlog is empty (everything done), or its contents are no longer considered important (agreed with stakeholders).</li>
+    <li>Time/money runs out.</li>
+    <li>We've done the last sprint and there's stuff to fix but defects are acceptable.</li>
+    <li>Product owner / stakeholder decides to end the project.</li>
+  </ul>
+  <p>Design and architecture can be done continuously for individual user stories, or fixed in the process as a standard (we use a layered architecture, these technologies, etc.).</p>
+  <p>Contracts are usually based on how many people (and what skills) will work on the project for a given period &mdash; great for flexibility, hard to give a final price/deadline. The customer is dragged into development and can give feedback immediately, but this overhead takes extra time.</p>
+  <p>Balancing <strong>Time, Cost, Scope</strong>.</p>
+</div>
+
+<h3>Burndown chart</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Shows how much work remains and how we're tracking against the plan.</p>
+  <figure><img src="../img/20230525221317.png" alt="Burndown chart"></figure>
+</div>
+
+<h3>Team velocity</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Story points completed per sprint; visible as <em>dy/dx</em> of the burndown chart, or as a separate curve.</p>
+  <figure><img src="../img/20230525221638.png" alt="Team velocity chart"></figure>
+</div>
+
+<h3>Planning poker</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>For each story, each team member privately estimates; estimates are revealed simultaneously. Discussion follows until the team converges. Recommended points: Fibonacci-like sequence.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Fibonacci numbers are used because <strong>estimation gets less precise as size grows</strong>. Discriminating between 1 vs 2 is meaningful; between 21 vs 22 is not. Wider gaps at higher numbers reflect that honesty.</p>
+</div>
+
+<h3>SCRUM Board</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Visible to the whole team; sticky notes also show who's working on each task.</p>
+  <figure><img src="../img/20230525224009.png" alt="Scrum board"></figure>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — common SCRUM gotchas examiners ask</span>
+  <ul>
+    <li><strong>"Sprint zero"</strong> &mdash; informal pre-sprint for setting up infrastructure (CI/CD, repos, dev environments). Officially not part of Scrum, but pragmatically common.</li>
+    <li><strong>Definition of Done vs Acceptance Criteria</strong> &mdash; DoD applies to all stories (passes tests, code reviewed, deployed to staging&hellip;); acceptance criteria are specific to each story.</li>
+    <li><strong>Velocity is not productivity</strong>. Velocity is for the team's own forecasting. Comparing velocity between teams is meaningless (different point scales) and creates perverse incentives.</li>
+    <li><strong>Scrumban &amp; Kanban</strong> &mdash; Kanban has no sprints, just a WIP limit on each column ("max 3 cards in <em>In Progress</em>"). Scrumban is a hybrid: sprint cadence + WIP limits + continuous backlog refinement. Good for ops / support teams where interrupts dominate.</li>
+    <li><strong>SAFe, LeSS, Spotify model</strong> &mdash; scaled-agile frameworks for big orgs. SAFe is heavyweight (lots of ceremony); Spotify's "tribes &amp; squads" model is famously aspirational and only Spotify actually does Spotify.</li>
+  </ul>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP</span>
+  <p>If the examiner asks "compare RUP and Scrum," frame the difference as:
+    <ul>
+      <li><strong>What's fixed, what's variable.</strong> RUP fixes scope, varies time/cost (sometimes). Agile fixes time/cost, varies scope.</li>
+      <li><strong>How much upfront design.</strong> RUP front-loads architecture; Scrum lets it emerge.</li>
+      <li><strong>Customer involvement.</strong> RUP isolates the customer behind a contract; Scrum embeds them.</li>
+      <li><strong>Documentation.</strong> RUP heavy; Scrum lean.</li>
+    </ul>
+  </p>
+</div>
+
+<!-- ============================================ -->
+<h2>Deployment and operation</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Before deployment, test the system in an environment as close to production as possible.</li>
+    <li>In operation: <strong>logging</strong> events (so we know what happened before a failure), monitoring, feedback channels are crucial.</li>
+    <li>Deployment includes environment prep (OS, DBs&hellip;) &mdash; can be automated/simplified with PaaS or Kubernetes.</li>
+    <li>Before going live, check the documentation &mdash; it may be stale due to development.</li>
+    <li>Deployment includes <strong>user training</strong> &mdash; to avoid failure due to user reluctance or ignorance.</li>
+    <li>Deployment may include customization for the specific customer (if the system supports it).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — deployment strategies</span>
+  <dl class="def-list">
+    <dt>Big-bang</dt>
+    <dd>Stop the old, start the new. Simple, but downtime + irreversible.</dd>
+    <dt>Rolling</dt>
+    <dd>Update instances one at a time. Default in Kubernetes Deployments and ECS rolling updates. Zero downtime if health checks are honest.</dd>
+    <dt>Blue/Green</dt>
+    <dd>Two production environments. Deploy to "green," switch load balancer target, "blue" is the instant-rollback. Cost = 2&times; infra during the swap. Implemented in AWS with two target groups + ALB listener rule, or with Route 53 weighted records.</dd>
+    <dt>Canary</dt>
+    <dd>Route 1&ndash;5% of traffic to the new version, watch metrics, ramp up. <code>Argo Rollouts</code>, AWS App Mesh / CodeDeploy.</dd>
+    <dt>Feature flags / dark launch</dt>
+    <dd>Code deploys but is dormant behind a flag (LaunchDarkly, Unleash); marketing controls activation independently of release. Decouples deploy from release.</dd>
+    <dt>Shadow / mirror traffic</dt>
+    <dd>Send a copy of production traffic to the new version, compare results. Reveals real-world bugs before they affect users.</dd>
+  </dl>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p><strong>"Deploy" and "release" should mean different things.</strong> Deploy = the binary is running in production. Release = users can see/use the feature. Feature flags separate the two so deployment risk and release risk are decoupled.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Maintenance &amp; reusability</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>At the end of a project, do an analysis: what worked, what didn't, what to improve?
+      <ul>
+        <li>Achieved productivity and quality.</li>
+        <li>Process used, deviations, why.</li>
+        <li>Plan vs reality and reasons (time, money, bugs, FP/LOC&hellip;).</li>
+        <li>Risks (plan vs reality, how we handled risks and problems).</li>
+        <li>Effort (also broken down by stage).</li>
+        <li>Defect summary.</li>
+        <li>Causal analysis &mdash; performance deviations of the process used (how and why).</li>
+        <li>Technologies used and their evaluation.</li>
+        <li>Document the team and individuals to contact later (e.g. when troubleshooting in another project).</li>
+        <li>Process assets &mdash; what arose that can be reused in other projects (libraries, checklists&hellip;).</li>
+      </ul>
+    </li>
+    <li>Maintenance can be a standalone project; specialised teams may run it.</li>
+    <li>Maintenance handles bug fixes (incl. security), updates, improvements (ideally automated, but user-confirmed); change management (what changed, how, why).</li>
+    <li>Reusability is usually addressed inside services/programs/components, not by reusing structs across projects (unless it's a specialised library) &mdash; you'd have problems on change.</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Lehman's laws of software evolution</span>
+  <p>Empirical "laws" formulated by Manny Lehman about long-lived systems:</p>
+  <ul>
+    <li><strong>Continuing change</strong> &mdash; a system in use must change or it becomes progressively less satisfactory.</li>
+    <li><strong>Increasing complexity</strong> &mdash; complexity rises unless work is done to reduce it.</li>
+    <li><strong>Continuing growth</strong> &mdash; functional content must grow.</li>
+    <li><strong>Declining quality</strong> &mdash; quality declines unless rigorously maintained.</li>
+  </ul>
+  <p>The maintenance budget exists to fight these tendencies. If you cut maintenance, you don't save money &mdash; you defer it with interest.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — types of maintenance</span>
+  <p>The IEEE / SWEBOK taxonomy that often appears in exam questions:</p>
+  <dl class="def-list">
+    <dt>Corrective</dt>
+    <dd>Fixing observed bugs.</dd>
+    <dt>Adaptive</dt>
+    <dd>Adjusting to environmental change (new OS, new dependency major version, new browser).</dd>
+    <dt>Perfective</dt>
+    <dd>Enhancements to functionality or performance based on user request.</dd>
+    <dt>Preventive</dt>
+    <dd>Refactoring, paying down technical debt before it bites &mdash; making future maintenance cheaper.</dd>
+  </dl>
+  <p>Industry studies (Lientz/Swanson) found <strong>~60% of maintenance effort is perfective</strong>, only ~20% corrective. People imagine maintenance = bug fixing; it's mostly enhancement.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — reusability mechanisms</span>
+  <ul>
+    <li><strong>Libraries / SDKs</strong> &mdash; the simplest form (Maven artefacts, npm packages).</li>
+    <li><strong>Frameworks</strong> &mdash; "inversion of control" libraries; you write code, the framework calls you (Spring, Hibernate).</li>
+    <li><strong>Components</strong> &mdash; deployable units behind a contract (Jakarta EE beans, microservices).</li>
+    <li><strong>Templates / archetypes</strong> &mdash; Maven archetypes, Terraform modules, Cookiecutter for Python projects.</li>
+    <li><strong>Infrastructure as code modules</strong> &mdash; e.g. Terraform AWS modules for VPCs reused across projects.</li>
+    <li><strong>Design patterns &amp; reference architectures</strong> &mdash; reusing <em>solutions</em>, not code.</li>
+  </ul>
+  <p>The DRY-but-don't-overgeneralize tradeoff: a reusable component built without enough real-world variation tends to fit nobody well. The "rule of three" &mdash; only extract a reusable abstraction after you've written essentially the same thing three times.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical example — running a project</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — end-to-end</span>
+  <p>Imagine a 6-month project to ship a new internal expense-management tool, Java/Spring backend on ECS, React frontend on CloudFront/S3:</p>
+  <ol>
+    <li><strong>Approach choice</strong> &mdash; agile (Scrum), 2-week sprints. Requirements are unclear (finance department doesn't know what they want until they see it). Total budget fixed; scope variable.</li>
+    <li><strong>Sprint 0</strong> &mdash; spin up Terraform skeletons (VPC, RDS, ECS cluster), Jenkins pipeline (build, test, deploy), GitLab project, definition of done.</li>
+    <li><strong>Backlog</strong> &mdash; build the product backlog with the finance team as PO surrogate. Stories prioritised MoSCoW.</li>
+    <li><strong>Sprints 1-12</strong> &mdash; each sprint produces a deployable increment behind feature flags. Daily standups. Sprint review with the finance manager. Retrospective drives one improvement per sprint.</li>
+    <li><strong>Deployment</strong> &mdash; blue/green via ALB target group switch. Smoke tests after every deploy. Canary by feature flag for high-risk features.</li>
+    <li><strong>Operation</strong> &mdash; CloudWatch alarms &rarr; PagerDuty; logs centralised in CloudWatch Logs / OpenSearch; runbook published in Confluence.</li>
+    <li><strong>Maintenance</strong> &mdash; 20% of team capacity reserved for adaptive + preventive maintenance. Quarterly tech-debt review.</li>
+  </ol>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=502ILHjX9EE" target="_blank">Agile vs Waterfall in 4 minutes</a></li>
+    <li><a href="https://www.youtube.com/watch?v=9TycLR0TqFA" target="_blank">Scrum in under 10 minutes &mdash; high-level overview</a></li>
+    <li><a href="https://www.youtube.com/watch?v=Xu0lkdQ8Tdc" target="_blank">Continuous Delivery vs Continuous Deployment (Dave Farley)</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Source for FROM REPO blocks: <a href="../3_softwarove_inzenyrstvi.md">3_softwarove_inzenyrstvi.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

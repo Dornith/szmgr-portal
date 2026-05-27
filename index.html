@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SZMGR-SWE — State Exam Learning Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+  <section class="q-hero">
+    <div class="q-label">SZMGR — Software Engineering — DEV specialization</div>
+    <h1>State exam learning portal</h1>
+    <p class="q-text">
+      Ten questions, structured for the FI MUNI Mgr state exam.
+      Content is sourced primarily from the <code>szmgr</code> repository (Czech notes, translated to English),
+      with extra context, intuition, and examples added where helpful.
+    </p>
+    <div class="q-source">Source repo: <a href="https://www.fi.muni.cz/studies/fe-mgr/swe2021.html">fi.muni.cz/studies/fe-mgr/swe2021</a></div>
+  </section>
+
+  <h2>How to use this portal</h2>
+
+  <div class="block from-repo">
+    <span class="block-tag">FROM REPO</span>
+    <p>Green-bordered blocks are <strong>directly from the szmgr repo</strong> &mdash; ported, translated, and lightly reformatted. The repo is the trusted baseline. Quoting from the repo README: <em>"Materials were enough to pass the state exam (network + UI questions) in summer 2023."</em></p>
+  </div>
+
+  <div class="block lectures">
+    <span class="block-tag">FROM LECTURES</span>
+    <p>Teal-bordered blocks are <strong>from the merged lecture slides you provided</strong> (PDFs in <code>materialy/</code>). Once you send PDFs for a question, those become the source of truth for that question.</p>
+  </div>
+
+  <div class="block added">
+    <span class="block-tag">ADDED</span>
+    <p>Blue-bordered blocks are <strong>additions I made</strong> &mdash; either expansions of dense sentences, more examples (often DevOps-flavored: AWS / Terraform / Jenkins / GitLab / Java), or modern context that wasn't in the repo notes. <strong>If your exam expects only what was in lectures, you can ignore these.</strong></p>
+  </div>
+
+  <div class="block intuition">
+    <span class="block-tag">INTUITION</span>
+    <p>Amber blocks distill the "how to think about this" &mdash; the mental model that makes the formal definitions click. Use these to remember concepts cold.</p>
+  </div>
+
+  <div class="block example">
+    <span class="block-tag">EXAMPLE</span>
+    <p>Purple blocks are concrete worked examples or code &mdash; SQL queries, Terraform snippets, Java code, real attack examples, etc.</p>
+  </div>
+
+  <div class="block watch">
+    <span class="block-tag">WATCH</span>
+    <p>Red blocks link to short, high-quality videos (Fireship, Computerphile, ByteByteGo, Tom Scott on networks, etc.) that explain the topic intuitively. Useful when the text isn't clicking.</p>
+  </div>
+
+  <div class="block warn">
+    <span class="block-tag">EXAM TIP</span>
+    <p>Yellow blocks flag things examiners ask, common gotchas, or "if you remember only one thing" points.</p>
+  </div>
+
+  <h2>The 10 questions</h2>
+
+  <div class="cards">
+
+    <a class="card" href="01-code-quality.html">
+      <span class="card-num">Q1</span>
+      <div class="card-title">Code Quality</div>
+      <p class="card-desc">Quality attributes, metrics, tactics. Clean Code, SOLID, refactoring. Unit / integration / acceptance tests. Debugging & performance testing. Quality management.</p>
+      <div class="card-meta">
+        <span class="badge full">Repo: full</span>
+        <span class="course-code">PV260</span>
+        <span class="course-code">PA017</span>
+      </div>
+    </a>
+
+    <a class="card" href="02-software-engineering.html">
+      <span class="card-num">Q2</span>
+      <div class="card-title">Software Engineering</div>
+      <p class="card-desc">SW life cycle, RUP, agile principles, SCRUM in detail. Deployment & operation. Maintenance, reusability.</p>
+      <div class="card-meta">
+        <span class="badge full">Repo: full</span>
+        <span class="course-code">PA017</span>
+      </div>
+    </a>
+
+    <a class="card" href="03-databases.html">
+      <span class="card-num">Q3</span>
+      <div class="card-title">Databases</div>
+      <p class="card-desc">Relational DB architecture. SQL: DDL, DML, transactions. Relational algebra. Integrity constraints. Indexing (B+/R trees), hashing.</p>
+      <div class="card-meta">
+        <span class="badge full">Repo: full</span>
+        <span class="course-code">PV003</span>
+        <span class="course-code">PA152</span>
+      </div>
+    </a>
+
+    <a class="card" href="04-networks.html">
+      <span class="card-num">Q4</span>
+      <div class="card-title">Computer Networks</div>
+      <p class="card-desc">ISO/OSI, TCP/IP. IP, TCP, UDP. Routing. IPv4 / IPv6. P2P, ad-hoc/sensor, high-speed, multimedia.</p>
+      <div class="card-meta">
+        <span class="badge full">Repo: full</span>
+        <span class="course-code">PA159</span>
+        <span class="course-code">PA191</span>
+      </div>
+    </a>
+
+    <a class="card" href="05-distributed-systems.html">
+      <span class="card-num">Q5</span>
+      <div class="card-title">Distributed Systems</div>
+      <p class="card-desc">Centralized vs distributed. Replication, data sharing. SOA, web services (SOAP/REST/GraphQL/gRPC). Real-world tech.</p>
+      <div class="card-meta">
+        <span class="badge full">Repo: full</span>
+        <span class="course-code">PA053</span>
+      </div>
+    </a>
+
+    <a class="card" href="06-development-deployment.html">
+      <span class="card-num">Q6</span>
+      <div class="card-title">Development & Deployment</div>
+      <p class="card-desc">Tools/environments for large-scale dev. Architectures from implementation view. CI/CD. Language choice. Persistence, ORM.</p>
+      <div class="card-meta">
+        <span class="badge partial">Repo: partial</span>
+        <span class="badge pdf">awaiting PDFs</span>
+        <span class="course-code">PA165</span>
+        <span class="course-code">PV179</span>
+        <span class="course-code">SA200</span>
+      </div>
+    </a>
+
+    <a class="card" href="07-secure-infrastructure.html">
+      <span class="card-num">Q7</span>
+      <div class="card-title">Secure Infrastructure</div>
+      <p class="card-desc">Infra & network security. Cyber threats, attack examples. Security mechanism design, vulnerability detection, pentesting.</p>
+      <div class="card-meta">
+        <span class="badge partial">Repo: adjacent</span>
+        <span class="badge pdf">awaiting PDFs</span>
+        <span class="course-code">PA018</span>
+        <span class="course-code">PA211</span>
+        <span class="course-code">PB177</span>
+        <span class="course-code">PA232</span>
+      </div>
+    </a>
+
+    <a class="card" href="08-cloud.html">
+      <span class="card-num">Q8</span>
+      <div class="card-title">Cloud Computing</div>
+      <p class="card-desc">IaaS / PaaS / SaaS. Designing cloud-native apps. Storage services. Quality, performance, scaling, availability, security.</p>
+      <div class="card-meta">
+        <span class="badge pdf">awaiting PDFs</span>
+        <span class="course-code">PA200</span>
+        <span class="course-code">PA234</span>
+      </div>
+    </a>
+
+    <a class="card" href="09-operating-systems.html">
+      <span class="card-num">Q9</span>
+      <div class="card-title">Operating Systems</div>
+      <p class="card-desc">UNIX kernel, memory & devices. Config, users, network services. UNIX dev (processes, files, I/O). Windows, NTFS, drivers, scripting.</p>
+      <div class="card-meta">
+        <span class="badge pdf">awaiting PDFs</span>
+        <span class="course-code">PV065</span>
+        <span class="course-code">PV077</span>
+        <span class="course-code">PV175</span>
+      </div>
+    </a>
+
+    <a class="card" href="10-nosql.html">
+      <span class="card-num">Q10</span>
+      <div class="card-title">NoSQL Databases</div>
+      <p class="card-desc">Principles & taxonomy. Distributed DBs, consistency. Key-value, document, column-family, graph: architecture & main representatives.</p>
+      <div class="card-meta">
+        <span class="badge pdf">awaiting PDFs</span>
+        <span class="course-code">PA195</span>
+      </div>
+    </a>
+
+  </div>
+
+  <h2>Status legend</h2>
+  <ul>
+    <li><span class="badge full">Repo: full</span> &mdash; the matching <code>.md</code> in the repo covers the entire question; the portal is a polished restructuring with added intuition/examples.</li>
+    <li><span class="badge partial">Repo: partial / adjacent</span> &mdash; the repo touches the topic but doesn't cover every sub-point; PDFs needed to complete.</li>
+    <li><span class="badge pdf">awaiting PDFs</span> &mdash; you've been asked to share the merged lecture slides; the page is a skeleton with the question prompt and a TOC of sub-topics already laid out so it's obvious what's missing.</li>
+  </ul>
+
+  <h2>What's left to do</h2>
+
+  <div class="block warn">
+    <span class="block-tag">PDFs needed</span>
+    <p>To finish the portal, please share merged slides for:</p>
+    <ul>
+      <li><strong>Q6</strong> Development &amp; deployment &mdash; particularly <code>SA200</code> (architectures, CI/CD depth, ORM)</li>
+      <li><strong>Q7</strong> Secure infrastructure &mdash; <code>PA018</code>, <code>PA211</code>, <code>PB177</code>, <code>PA232</code></li>
+      <li><strong>Q8</strong> Cloud computing &mdash; <code>PA200</code>, <code>PA234</code></li>
+      <li><strong>Q9</strong> Operating systems &mdash; <code>PV065</code>, <code>PV077</code>, <code>PV175</code></li>
+      <li><strong>Q10</strong> NoSQL databases &mdash; <code>PA195</code></li>
+    </ul>
+    <p>Once shared, those PDFs become the source of truth and I'll port them into the matching pages with the same FROM REPO / ADDED tagging.</p>
+  </div>
+
+  <div class="footnote">
+    Repo: <a href="https://github.com/">github.com/...</a> &middot; Original notes in Czech, translated to English here. Credit to the repo's original authors and contributors.
+  </div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

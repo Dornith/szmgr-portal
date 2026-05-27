@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q10 NoSQL Databases — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 10 &middot; <span class="course-code">PA195</span></div>
+  <h1>NoSQL Databases</h1>
+  <p class="q-text">
+    Principles and taxonomy of NoSQL databases. Distributed databases, ensuring consistency.
+    Architectures and basic characteristics of the main representatives of NoSQL databases
+    (key-value stores, document databases, column-family stores, graph databases).
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>materialy/PA195</code> (Novák &amp; Dohnal lectures, MUNI). I'll start from zero since you haven't taken the course.</div>
+</section>
+
+<div class="block intuition">
+  <span class="block-tag">START HERE — learning path</span>
+  <p>You said you're new to this. Read this page top to bottom:</p>
+  <ol>
+    <li>"Why NoSQL exists" gives you the motivation.</li>
+    <li>"Aggregate data model" is the single biggest mental shift from SQL — get this and the rest clicks.</li>
+    <li>"Distribution &amp; Consistency" is the theory section (sharding, replication, CAP, BASE, quorum). This is also the part most likely to be asked precisely on the exam.</li>
+    <li>The four families (key-value / document / column-family / graph) — each gets a section with what they are, when to use them, and one canonical product.</li>
+    <li>"How to pick" gives you the decision lens.</li>
+  </ol>
+</div>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Why NoSQL (Big Data, cloud)</li>
+  <li>RDBMS vs NoSQL</li>
+  <li>Aggregate data model</li>
+  <li>Sharding</li>
+  <li>Replication (master-slave, P2P)</li>
+  <li>Write/Read consistency</li>
+  <li>CAP theorem</li>
+  <li>Quorum (R + W > N)</li>
+  <li>BASE</li>
+  <li>Key-value stores</li>
+  <li>Document databases</li>
+  <li>Column-family stores</li>
+  <li>Graph databases</li>
+  <li>Polyglot persistence</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Why NoSQL exists</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Trends driving the change (PA195 L1)</span>
+  <ul>
+    <li><strong>Big Data</strong> &mdash; Volume, Velocity, Variety. Later authors added Veracity and Value. Sources: social networks, server/router logs, sensor networks, IoT, machine-generated data (one transatlantic Boeing flight = 640 TB).</li>
+    <li><strong>Big Users</strong> &mdash; a web app can have millions of users within months.</li>
+    <li><strong>Cloud computing</strong> &mdash; flexibility &amp; distribution by default.</li>
+  </ul>
+  <p>Big Data definition (Gartner 2012): "high volume, high velocity, and/or high variety information assets that require new forms of processing to enable enhanced decision making, insight discovery and process optimization."</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — RDBMS for Big Data?</span>
+  <table>
+    <thead><tr><th>Trend</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td>Volume of data</td><td>Real DB scalability — massive distribution, dynamic resource management</td></tr>
+      <tr><td>Cloud computing</td><td>Horizontally scaling systems</td></tr>
+      <tr><td>Velocity</td><td>Frequent updates</td></tr>
+      <tr><td>Many users</td><td>Massive read throughput</td></tr>
+      <tr><td>Variety</td><td>Flexible schema, semi-structured data</td></tr>
+    </tbody>
+  </table>
+  <p>Why RDBMS struggles:</p>
+  <ul>
+    <li><strong>Relational schema</strong> &mdash; data in tuples, schema known a priori. But current data is naturally flexible.</li>
+    <li><strong>Schema normalization (3NF)</strong> &mdash; data split into tables, queries merge them. Inefficient at scale; slow in distributed environment.</li>
+    <li><strong>Full ACID transactions</strong> &mdash; very inefficient in distributed environments.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — What is NoSQL? (Sadalage &amp; Fowler)</span>
+  <p>The term "NoSQL" was coined in the late 90s by Carlo Strozzi (for something different). Resurrected at an informal meetup in 2009 in San Francisco (Voldemort, Cassandra, Dynomite, HBase, Hypertable, CouchDB, MongoDB).</p>
+  <blockquote>"NoSQL is an accidental term with no precise definition." &mdash; Sadalage &amp; Fowler</blockquote>
+  <p>NoSQL databases are (mostly):</p>
+  <ul>
+    <li>Not using the relational model (nor SQL)</li>
+    <li>Designed to run on large clusters (horizontally scalable)</li>
+    <li>No schema &mdash; fields can be freely added to any record</li>
+    <li>Open source</li>
+    <li>Based on the needs of 21st-century web estates</li>
+  </ul>
+  <p>Often also: easy replication, simple API, eventually consistent (not ACID).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — NoSQL properties &amp; challenges</span>
+  <h4>Properties</h4>
+  <ol>
+    <li><strong>Good scalability</strong> &mdash; horizontal instead of vertical.</li>
+    <li><strong>Dynamic schema</strong> &mdash; different levels of flexibility by DB type.</li>
+    <li><strong>Efficient reading</strong> &mdash; spend more time storing data so reads are fast; keep related information together.</li>
+    <li><strong>Cost saving</strong> &mdash; designed for commodity HW; typically open source.</li>
+  </ol>
+  <h4>Challenges</h4>
+  <ol>
+    <li><strong>Maturity</strong> &mdash; getting better, but RDBMS had decades.</li>
+    <li><strong>User support</strong> &mdash; rarely the kind of pro support Oracle provides.</li>
+    <li><strong>Administration</strong> &mdash; massive distribution requires advanced admin skill.</li>
+    <li><strong>Standards for data access</strong> &mdash; RDBMS has SQL; NoSQL world is wilder.</li>
+    <li><strong>Lack of experts</strong> &mdash; not enough DBAs for NoSQL stacks.</li>
+  </ol>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — relational vs NoSQL in one line</span>
+  <p>Relational DBs ask "<em>what's the perfect way to model this data?</em>" NoSQL DBs ask "<em>what's the perfect way to model this data <strong>for the way my app actually reads and writes it</strong>?</em>" That's the whole shift. NoSQL trades the universality of the relational model for tight optimization to specific access patterns.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>The Aggregate Data Model (the key concept)</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — From RDBMS to NoSQL (PA195 L3)</span>
+  <p>Efficient implementations of <strong>table joins</strong> and <strong>transactional processing</strong> require a centralized system. NoSQL Databases:</p>
+  <ul>
+    <li>Database schema tailored for a specific application.</li>
+    <li><strong>Keep together data pieces that are often accessed together.</strong></li>
+    <li>Write operations might be slower; read is fast.</li>
+    <li>Weaker consistency guarantees.</li>
+  </ul>
+  <p>&rArr; efficiency and horizontal scalability.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Aggregates</span>
+  <p>An <strong>aggregate</strong> is:</p>
+  <ul>
+    <li>A data unit with a complex structure (not just a row).</li>
+    <li>A collection of related objects treated as a unit.</li>
+    <li>The unit for data manipulation and management of consistency.</li>
+  </ul>
+  <p>The relational model is <em>aggregate-ignorant</em>. That's a feature — it lets you look at the data in many ways. The downside: when there's a clear primary access pattern, you'd benefit from telling the database "<em>this stuff goes together</em>." Aggregates do exactly that.</p>
+  <p>Key-value, document, and column-family stores are <strong>aggregate-oriented</strong>. Graph stores are not.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — aggregate (PA195 slides)</span>
+<pre><code>// Customer collection
+{
+  "customerID": 1,
+  "name": "Jan Novák",
+  "address": { "city": "Praha", "street": "Krásná 5", "ZIP": "111 00" }
+}
+
+// Order collection — order contains its items as a nested array
+{
+  "orderNumber": 11,
+  "date": "2015-04-01",
+  "customerID": 1,
+  "orderItems": [
+    { "productID": 111, "quantity": 1,  "price": 1300 },
+    { "productID": 112, "quantity": 10, "price":  300 }
+  ],
+  "invoice": { "bankAccount": "...", "address": {...} }
+}
+
+// Product collection
+{ "productID": 111, "name": "Vysavač ETA E1490" }
+{ "productID": 112, "name": "Sáček k ETA E1490" }
+</code></pre>
+  <p>An <em>Order</em> aggregate carries everything you need to display or process that order — no joins. A relational schema would split this across <code>orders</code>, <code>order_items</code>, <code>products</code>, <code>invoices</code>, <code>addresses</code>, etc.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — why aggregates matter for distribution</span>
+  <p>Aggregates tell the database <strong>what should live on the same node</strong>. When you fetch an Order, the system retrieves a single aggregate from a single node — no cross-machine joins. That's the whole reason aggregate-oriented NoSQL scales horizontally so well, and the reason graph databases (which can't define a single aggregate when relationships go everywhere) struggle with distribution.</p>
+  <p>One other consequence: <strong>most aggregate-oriented NoSQL DBs only guarantee atomic writes within a single aggregate.</strong> Cross-aggregate updates can race.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Distribution: sharding &amp; replication</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Scalability</span>
+  <p><strong>Scalability</strong> = handling growing amounts of data and queries without losing performance.</p>
+  <h4>Vertical (scaling up)</h4>
+  <ul>
+    <li>Bigger, more powerful machine: more RAM, more cores, disk arrays.</li>
+    <li>Pro: simple, no data distribution to handle; favours strong consistency.</li>
+    <li>Cons: higher costs; data growth limit (even the largest machine has a limit); needs proactive provisioning (upfront budget); vendor lock-in (large machines come from a few vendors).</li>
+  </ul>
+  <h4>Horizontal (scaling out)</h4>
+  <ul>
+    <li>Distribute across many commodity machines.</li>
+    <li>Data partitioned across many disks; can use all machines' main memory; distributed computation.</li>
+    <li>Cons: synchronization, consistency, partial failures.</li>
+  </ul>
+  <p>Watch out for the <strong>fallacies of distributed computing</strong>: network is reliable, latency is zero, bandwidth is infinite, network is secure, topology doesn't change&hellip; all false.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Two ways to distribute</span>
+  <p>For horizontal scalability:</p>
+  <dl class="def-list">
+    <dt>Replication</dt>
+    <dd>The same data is copied over multiple nodes. Master-slave or peer-to-peer.</dd>
+    <dt>Sharding</dt>
+    <dd>Different chunks of data are placed on different nodes (data partitioning). Different clients access different parts of the dataset.</dd>
+  </dl>
+  <p>You can use either or combine. Distribution models = specific ways to do sharding, replication, or both.</p>
+  <p><strong>Best case is still a single server</strong> if you can &mdash; spares you a lot of problems. NoSQL on a single server still gives you flexible schema and simplicity. Graph DBs are especially happy single-server (it's hard to partition a dense graph).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Sharding goals</span>
+  <ol>
+    <li><strong>Keep data accessed together, together</strong> &mdash; so the user gets it from a single server. Aggregates help.</li>
+    <li><strong>Arrange data on the nodes</strong>:
+      <ul>
+        <li>Keep load balanced (can change over time).</li>
+        <li>Consider the physical location (data centres near users).</li>
+      </ul>
+    </li>
+  </ol>
+  <p>Many NoSQL databases offer <strong>auto-sharding</strong>. A node failure makes that shard's data unavailable &mdash; so sharding is often combined with replication.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Master-slave replication</span>
+  <ul>
+    <li>Replicate data across multiple nodes.</li>
+    <li><strong>One node = primary (master)</strong>; others = secondaries (slaves).</li>
+    <li>Master processes all updates.</li>
+    <li>Reads can come from any node.</li>
+  </ul>
+  <p>Scales <strong>read-intensive applications</strong>: more reads &rArr; more slaves. If the master fails, slaves can still serve reads, and a slave can be promoted to new master quickly.</p>
+  <p>Bottleneck: the master's ability to process writes. Masters can be selected manually (user-defined) or automatically (cluster-elected).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Peer-to-peer replication</span>
+  <ul>
+    <li>No master &mdash; all replicas are equal.</li>
+    <li>Every node can handle a write, then spreads the update.</li>
+  </ul>
+  <p><strong>Problem:</strong> consistency. Two users may write simultaneously at two different nodes.</p>
+  <p><strong>Solutions:</strong></p>
+  <ul>
+    <li>Coordinate before writing (avoids conflict at the cost of network traffic).</li>
+    <li>Not all replicas need to agree &mdash; just a <strong>majority</strong> (quorum, see below).</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Combinations</span>
+  <ul>
+    <li><strong>Sharding + master-slave</strong> &mdash; each shard has a single master. A node can be master for some data and slave for other.</li>
+    <li><strong>Sharding + peer-to-peer</strong> &mdash; common for column-family DBs. Typical default <strong>replication factor = 3</strong> (each shard on three nodes). &rArr; need to solve consistency issues.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Consistency</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Consistency definitions</span>
+  <p>"Consistency is the lack of contradiction in the DB."</p>
+  <p>Centralized RDBMS &rArr; <strong>strong consistency</strong>. Distributed NoSQL DBs typically <strong>relax</strong> consistency (and/or durability):</p>
+  <ul>
+    <li>Strong consistency &rarr; eventual consistency.</li>
+    <li>BASE instead of ACID.</li>
+    <li>CAP theorem &mdash; tradeoff between consistency and availability.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Three kinds of consistency conflict</span>
+  <h4>1. Write-write conflict</h4>
+  <p>Two users want to update the same record. Risk: <em>lost update</em>, second update based on stale data.</p>
+  <ul>
+    <li><strong>Pessimistic</strong> &mdash; prevent conflicts: acquire write locks before update.</li>
+    <li><strong>Optimistic</strong> &mdash; let conflicts happen, detect, resolve: conditional update, save both updates and record the conflict, version stamps.</li>
+  </ul>
+  <h4>2. Read-write conflict (inconsistent read)</h4>
+  <p>One user reads while another writes &mdash; logical inconsistency. Ideal solution: ACID transactions (strong consistency). NoSQL DBs typically support atomic updates only within a single aggregate, so updates affecting multiple aggregates leave an <strong>inconsistency window</strong>.</p>
+  <h4>3. Replication consistency</h4>
+  <p>Ensuring the same data item has the same value on different replicas. After some time the write propagates everywhere &mdash; "eventual consistency". In the meantime: stale data.</p>
+  <p><strong>Read-your-writes (session consistency)</strong> &mdash; gets violated if a user writes and reads on different replicas. Solution: <strong>sticky sessions</strong> (session affinity).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — CAP Theorem</span>
+  <p>CAP = <strong>C</strong>onsistency, <strong>A</strong>vailability, <strong>P</strong>artition tolerance.</p>
+  <dl class="def-list">
+    <dt>Consistency</dt>
+    <dd>After an update, all readers in a distributed system see the same data.</dd>
+    <dt>Availability</dt>
+    <dd>Every request results in a response.</dd>
+    <dt>Partition tolerance</dt>
+    <dd>System continues operating even if two sets of servers get isolated — a connection failure shouldn't shut the system down.</dd>
+  </dl>
+  <p><strong>CAP Theorem:</strong> a shared-data system <strong>cannot have all three</strong>. Only two of three are possible. First formulated in 2000 by Eric Brewer; proven in 2002 by Gilbert &amp; Lynch.</p>
+  <p>Reality:</p>
+  <ul>
+    <li>A single-server system is always CA (as are all ACID systems).</li>
+    <li>A distributed system practically <strong>must</strong> be Partition-tolerant (you can't reliably detect all network failures).</li>
+    <li>&rArr; the real choice is C vs A during partitions. <strong>It's not a binary decision</strong>; it has many shades.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — CAP in practice</span>
+  <h4>PC — Partition tolerance + Consistency (strong consistency)</h4>
+  <p>Two users, two masters. Before a write is committed, both nodes must agree on order. If partitioned, writes wait forever — <strong>availability lost</strong> (reads may still work).</p>
+  <h4>PC with master-slave (some availability)</h4>
+  <p>Master can commit the write during a partition. Slaves have stale data — we've lost <em>some</em> consistency. Better balance.</p>
+  <h4>PA — Partition tolerance + Availability</h4>
+  <p>Peer-to-peer replication, eventual consistency. All requests are answered during partitions — but we risk losing consistency guarantees entirely.</p>
+  <h4>Quorum (the middle road)</h4>
+  <p>For replication consistency.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Quorum (R + W &gt; N)</span>
+  <p>Peer-to-peer replication with replication factor <strong>N</strong> (number of replicas of each data object).</p>
+  <ul>
+    <li><strong>Write quorum: W</strong> &mdash; when writing, at least W replicas must agree. <strong>W &gt; N/2</strong> &rArr; write consistency (only one of two simultaneous writes can get a majority).</li>
+    <li><strong>Read quorum: R</strong> &mdash; number of peers contacted for a single read. Assuming each value has a timestamp (so older values can be told from newer), <strong>R + W &gt; N</strong> &rArr; strong read consistency (the reader can't get stale data).</li>
+  </ul>
+  <p>Example: N = 3, W = 2, R = 2 &mdash; classic Dynamo/Cassandra configuration.</p>
+  <ul>
+    <li>2 + 2 &gt; 3 &rArr; strong consistency.</li>
+    <li>2 &gt; 3/2 &rArr; write consistency.</li>
+    <li>Can survive a single node failure (you only need 2 of 3 in either direction).</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Relaxing durability</span>
+  <p>Durability: when a write is committed, the change is permanent. In some cases (sessions, sensor data) strict durability isn't essential and can be traded for scalability:</p>
+  <ul>
+    <li>Store data in memory and flush to disk regularly. If the system shuts down, you lose updates still in memory.</li>
+    <li><strong>Write-behind / write-back</strong> &mdash; ack immediately, replicate later. Fast writes but if the writing node crashes before spreading, durability fails.</li>
+    <li><strong>Write-through</strong> &mdash; spread to replicas first, ack only after acknowledgement from others. Slower but durable.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — BASE concept</span>
+  <p>BASE is a vague term used as contrast to ACID:</p>
+  <dl class="def-list">
+    <dt>Basically Available</dt>
+    <dd>The system works basically all the time. Partial failures occur but without total system failure.</dd>
+    <dt>Soft state</dt>
+    <dd>The system is in flux — non-deterministic state. Changes happen all the time (replication, repair).</dd>
+    <dt>Eventual consistency</dt>
+    <dd>The system will be in some consistent state at some time in the future.</dd>
+  </dl>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP — the canonical answer</span>
+  <p>When asked "how do NoSQL databases ensure consistency in a distributed setting?" cover:</p>
+  <ol>
+    <li>They <em>relax</em> consistency to gain availability &amp; scale (CAP theorem says you must).</li>
+    <li>Three flavors of conflict: write-write, read-write, replication.</li>
+    <li>Tools to handle them: locking (pessimistic) / versioning (optimistic) / quorum (R + W &gt; N).</li>
+    <li>Most settle for <strong>eventual consistency</strong>; explicit ACID can still be implemented on a single aggregate.</li>
+    <li>BASE replaces ACID as the operating philosophy.</li>
+  </ol>
+</div>
+
+<!-- ============================================ -->
+<h2>The four NoSQL families</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Taxonomy</span>
+  <p>Four canonical families:</p>
+  <ol>
+    <li><strong>Key-value stores</strong> &mdash; can store any data; if JSON, often extra functionality.</li>
+    <li><strong>Document databases</strong> &mdash; structured hierarchical text data (JSON, XML).</li>
+    <li><strong>Column-family stores</strong> &mdash; rows with many columns associated with a row key; can be written as JSON.</li>
+    <li><strong>Graph databases</strong> &mdash; nodes and edges as first-class citizens.</li>
+  </ol>
+  <p>The first three are aggregate-oriented. Graph is not.</p>
+</div>
+
+<!-- ============================================ -->
+<h3>1. Key-value stores</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Basics (PA195 L4)</span>
+  <ul>
+    <li>A simple hash table (map). Primary use: <strong>all accesses via primary key</strong>.</li>
+    <li>RDBMS equivalent: a table with two columns &mdash; ID and a BLOB value.</li>
+    <li>Operations: <code>put(key, value)</code>, <code>value = get(key)</code>, <code>delete(key)</code>.</li>
+  </ul>
+  <h4>Querying</h4>
+  <p>You query <em>by key only</em>. To query by an attribute of the value, you have to read it first &mdash; or use an additional index (full-text), <em>after the data has been indexed</em>. Some systems support this (e.g. Riak Search).</p>
+  <h4>Keys</h4>
+  <ul>
+    <li>Provided by the user (natural unique key — user ID, session ID, cart ID).</li>
+    <li>Generated by some algorithm.</li>
+    <li>Derived from time stamps.</li>
+    <li>Expiration: useful for caches, sessions, shopping carts.</li>
+  </ul>
+  <h4>Namespaces / buckets</h4>
+  <p>Group keys logically. e.g. Riak: <code>location = &lt;namespace, key&gt;</code>. Multiple namespaces (UserProfiles, ShoppingCart, Sessions) implement aggregate-based modelling.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Origins &amp; representatives</span>
+  <p>2007: <strong>Amazon Dynamo</strong> paper &mdash; the foundational distributed key-value store. Today Amazon offers it as a service: <strong>DynamoDB</strong>.</p>
+  <p>Other representatives: Redis, Riak, Voldemort, Memcached.</p>
+  <h4>Selected challenges &amp; techniques from Dynamo</h4>
+  <table>
+    <thead><tr><th>Challenge</th><th>Technique</th></tr></thead>
+    <tbody>
+      <tr><td>Data partitioning (sharding)</td><td>Consistent hashing</td></tr>
+      <tr><td>Read scalability &amp; reliability</td><td>Data replication</td></tr>
+      <tr><td>Replica management</td><td>Version stamps, vector clocks</td></tr>
+      <tr><td>Detect node join/leave/failure</td><td>Gossip protocol (no centralized registry)</td></tr>
+      <tr><td>Concurrency, transactions</td><td>Two-phase commit, MVCC</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — Riak HTTP REST API</span>
+<pre><code>curl -X PUT http://localhost:8098/buckets/authors/keys/David \
+     -d '{"name": "David Novák", "affiliation": "MU"}'
+
+curl -X GET http://localhost:8098/buckets/authors/keys/David
+# returns: {"name": "David Novák", "affiliation": "MU"}
+
+curl -X DELETE http://localhost:8098/buckets/authors/keys/David
+</code></pre>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — when to use a KV store</span>
+  <p><strong>Good fit:</strong></p>
+  <ul>
+    <li>Cache (Redis sitting in front of a DB)</li>
+    <li>Session storage (login tokens, shopping carts)</li>
+    <li>User preferences keyed by user ID</li>
+    <li>Leaderboards (Redis sorted sets)</li>
+    <li>Feature flags / config</li>
+  </ul>
+  <p><strong>Bad fit:</strong></p>
+  <ul>
+    <li>Anything where you need to query by something other than the primary key.</li>
+    <li>Complex relationships between objects.</li>
+  </ul>
+  <p><strong>Pick</strong>: Redis for in-memory speed; DynamoDB if you want a managed AWS service that scales infinitely (you'll meet it as a DevOps engineer).</p>
+</div>
+
+<!-- ============================================ -->
+<h3>2. Document databases</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Fundamentals (PA195 L6)</span>
+  <ul>
+    <li>Basic concept: <strong>document</strong> &mdash; self-describing piece of data.</li>
+    <li>Hierarchical tree structures &mdash; nested associative arrays, collections, scalars.</li>
+    <li>Formats: XML, JSON, BSON.</li>
+    <li>Documents in a collection should be similar; <strong>their schema can differ</strong>.</li>
+    <li>Documents often stored as values of a key-value &mdash; "examinable values," with indexes on chosen keys/fields.</li>
+  </ul>
+  <h4>Why document DBs</h4>
+  <ul>
+    <li>JSON / XML are popular for data exchange.</li>
+    <li>Data from a document DB can be used directly &mdash; no ORM.</li>
+    <li>JSON is much closer to the in-memory object representation than relational rows &mdash; <strong>Object-Document Mapping (ODM)</strong> is faster than ORM.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — JSON essentials</span>
+  <p>Text-based open standard for data interchange. ECMA-404. Derived from JavaScript. MIME type: <code>application/json</code>. Language-independent.</p>
+  <p>Data types:</p>
+  <ul>
+    <li><strong>object</strong> &mdash; unordered set of <code>name:value</code> pairs (properties).</li>
+    <li><strong>array</strong> &mdash; ordered collection of values.</li>
+    <li><strong>value</strong> &mdash; string, number, true/false/null, object, array.</li>
+  </ul>
+  <p>No comments (security reasons). No way to specify number precision — depends on parser. <strong>JSON Schema</strong> exists as a way to specify the schema (also in JSON).</p>
+  <p>vs XML &mdash; XML is mature (DTD/XSD schema, namespaces, DOM/SAX parsing, XPath, XQuery, XSLT), great for config and metadata. XML databases are <em>not considered NoSQL</em>. JSON wins today: compact, easier to write, has all features typically needed.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — MongoDB</span>
+  <ul>
+    <li>Initial release: 2009</li>
+    <li>Written in C++; open source; cross-platform</li>
+    <li>JSON documents (stored as BSON internally)</li>
+    <li>High performance — many indexes</li>
+    <li>High availability — replication + eventual consistency + automatic failover</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — MongoDB minimal cheat-sheet</span>
+<pre><code>// Insert
+db.users.insertOne({ _id: 1, name: "Andrej", roles: ["admin", "user"] });
+
+// Find
+db.users.find({ roles: "admin" });
+
+// Find with projection (only specific fields)
+db.users.find({ _id: 1 }, { name: 1, _id: 0 });
+
+// Update
+db.users.updateOne({ _id: 1 }, { $set: { lastLogin: new Date() } });
+
+// Push to an array
+db.users.updateOne({ _id: 1 }, { $push: { roles: "ops" } });
+
+// Aggregation pipeline
+db.orders.aggregate([
+  { $match: { status: "paid" } },
+  { $group: { _id: "$customerID", total: { $sum: "$amount" } } },
+  { $sort: { total: -1 } }
+]);
+
+// Index for fast lookups
+db.users.createIndex({ email: 1 }, { unique: true });
+</code></pre>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — when to use a document DB</span>
+  <p><strong>Good fit:</strong></p>
+  <ul>
+    <li>Variable schema per record (CMS, product catalogs).</li>
+    <li>Records you want to fetch as a whole (an order with all its items).</li>
+    <li>Rapid prototyping (no schema migrations).</li>
+    <li>Mobile / JS-heavy backends where data already moves as JSON.</li>
+  </ul>
+  <p><strong>Bad fit:</strong></p>
+  <ul>
+    <li>Heavily relational data (lots of joins).</li>
+    <li>Strict ACID transactions across many entities (MongoDB does support multi-doc transactions since 4.0 but performance is the cost).</li>
+    <li>Aggregations across the entire dataset (slower than warehouses).</li>
+  </ul>
+  <p><strong>Pick</strong>: MongoDB if self-hosted or self-managed; <strong>AWS DocumentDB</strong> if you want Mongo API on managed AWS; <strong>Couchbase</strong> if you want SQL-like syntax over documents (N1QL).</p>
+</div>
+
+<!-- ============================================ -->
+<h3>3. Column-family stores</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Basics (PA195 L7)</span>
+  <p>Alternative terms: <em>wide-column</em>, <em>columnar</em>. Don't confuse with column-oriented RDBMS (they're different things).</p>
+  <p>Data model: rows that have many columns associated with a row key. <strong>Column families</strong> are groups of related data (columns) that are often accessed together.</p>
+  <ul>
+    <li>e.g. for a customer, you usually access all profile info together — but not the customer's orders. Profile and Orders become separate column families.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Data model</span>
+  <p><strong>Column</strong> = a 3-tuple (name, value, timestamp).</p>
+  <p><strong>Row</strong> = a collection of columns attached to a row key. Columns can be added to any row at any time, without having to add them to other rows.</p>
+<pre><code>// row
+"martin-fowler" : {
+  firstName: "Martin",
+  lastName:  "Fowler",
+  location:  "Boston"
+}
+</code></pre>
+  <p><strong>Column family</strong> = a set of columns containing related data.</p>
+<pre><code>{
+  // row 1
+  "pramod-sadalage" : {
+    firstName: "Pramod", lastName: "Sadalage",
+    lastVisit: "2012/12/12"
+  },
+  // row 2
+  "martin-fowler" : {
+    firstName: "Martin", lastName: "Fowler",
+    location: "Boston",  active: "true"
+  }
+}
+</code></pre>
+  <p><strong>Super column family</strong> (Cassandra 1.0) &mdash; a column family whose columns each contain a map of sub-columns. Used e.g. to model multiple addresses per user (home_address, work_address) under one row.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Representatives</span>
+  <ul>
+    <li><strong>Google BigTable</strong> &mdash; the original.</li>
+    <li><strong>Apache Cassandra</strong> &mdash; open source; born at Facebook; used at Netflix, Apple, eBay.</li>
+    <li><strong>Apache HBase</strong> &mdash; open source clone of BigTable; runs on HDFS.</li>
+    <li><strong>ScyllaDB</strong> &mdash; Cassandra-compatible, written in C++ for performance.</li>
+  </ul>
+  <p>Apache Cassandra is the canonical study target:</p>
+  <ul>
+    <li>Data model 1.0 (super columns) vs 2.0 (CQL3 — table-like).</li>
+    <li><strong>CQL</strong> (Cassandra Query Language) &mdash; SQL-like.</li>
+    <li>Partitioning + replication (peer-to-peer, replication factor 3 typical).</li>
+    <li>Local data persistence: SSTables, commit log, memtables.</li>
+    <li>Indexes, Lightweight Transactions (Paxos-based).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — when to use column-family</span>
+  <p><strong>Good fit:</strong></p>
+  <ul>
+    <li>Write-heavy workloads (time-series, IoT, sensor data, event logs).</li>
+    <li>Massive scale where peer-to-peer with tunable consistency suits.</li>
+    <li>Data with many sparse columns per row.</li>
+  </ul>
+  <p><strong>Bad fit:</strong></p>
+  <ul>
+    <li>Ad-hoc queries (you must design tables per access pattern).</li>
+    <li>Strict ACID transactions.</li>
+    <li>Small datasets — operational complexity isn't worth it.</li>
+  </ul>
+  <p><strong>Pick</strong>: Cassandra (self-managed); <strong>AWS Keyspaces</strong> (managed Cassandra); BigTable if you're in GCP; <strong>DynamoDB</strong> on AWS is often used instead even though it's KV in spirit.</p>
+</div>
+
+<!-- ============================================ -->
+<h3>4. Graph databases</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Mission (PA195 L8)</span>
+  <p>To store entities and relationships between them.</p>
+  <ul>
+    <li><strong>Nodes</strong> are instances of objects. Nodes have properties (e.g. name).</li>
+    <li><strong>Edges</strong> connect nodes; they're directional. Edges have types (e.g. <em>likes, friend</em>).</li>
+  </ul>
+  <p>Nodes are organized <em>by relationships</em>. Allows finding interesting patterns: <em>"Get all nodes that are 'employee' of 'Big Company' and that 'like' 'NoSQL Distilled'"</em>.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Graph theory primer</span>
+  <p>Graph G = (V, E), nodes V (|V| = n) and edges E (|E| = m). Basic operations:</p>
+  <ul>
+    <li>Find neighbours of a node.</li>
+    <li>Check if two nodes are connected.</li>
+    <li>Update the graph structure.</li>
+  </ul>
+  <h4>Data structures</h4>
+  <dl class="def-list">
+    <dt>Adjacency matrix</dt>
+    <dd>n × n booleans, A[i][j] = "i connected to j". Good for: checking connectivity, adding/removing edges. Bad for: O(n²) space (sparse graphs waste); O(n) to list neighbours; expensive add/delete of nodes.</dd>
+
+    <dt>Adjacency list</dt>
+    <dd>Vector of n lists, each enumerating neighbours of one node. Good for: compact for sparse graphs; cheap to add nodes; fast neighbour retrieval. Bad for: O(log n) edge-existence check (sorted) or O(n) (unsorted).</dd>
+
+    <dt>Incidence matrix</dt>
+    <dd>n rows (nodes) × m columns (edges). Good for hypergraphs (one edge connects many nodes). Bad for storage (n × m bits) and slow listing.</dd>
+
+    <dt>Laplacian matrix</dt>
+    <dd>n × n integers; diagonal = degree of node, off-diagonal = -1 if connected, 0 otherwise. Used in spectral graph theory.</dd>
+  </dl>
+  <p>Most graph DBs use <strong>adjacency lists</strong> internally because real-world graphs are sparse.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Representatives</span>
+  <ul>
+    <li><strong>Neo4j</strong> &mdash; transactional, the most well-known graph DB. Cypher query language.</li>
+    <li><strong>JanusGraph</strong> &mdash; non-transactional, distributed; uses Cassandra/HBase as backend.</li>
+    <li><strong>Amazon Neptune</strong> &mdash; managed; supports Gremlin and SPARQL.</li>
+    <li><strong>ArangoDB</strong> &mdash; multi-model (graph + document + KV).</li>
+  </ul>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — Cypher (Neo4j)</span>
+<pre><code>// Create nodes
+CREATE (alice:Person {name: "Alice"})
+CREATE (bob:Person {name: "Bob"})
+CREATE (acme:Company {name: "Acme"})
+
+// Create relationships
+CREATE (alice)-[:WORKS_AT {since: 2020}]-&gt;(acme)
+CREATE (bob)-[:WORKS_AT {since: 2018}]-&gt;(acme)
+CREATE (alice)-[:KNOWS]-&gt;(bob)
+
+// Friends-of-friends who work at the same company
+MATCH (me:Person {name: "Alice"})-[:KNOWS*1..3]-(friend)-[:WORKS_AT]-&gt;(c:Company)
+WHERE c.name = "Acme"
+RETURN DISTINCT friend.name
+
+// Shortest path
+MATCH p = shortestPath((a:Person {name:"Alice"})-[:KNOWS*]-(b:Person {name:"Eve"}))
+RETURN p
+</code></pre>
+  <p>What's powerful: <code>[:KNOWS*1..3]</code> — "traverse 1 to 3 hops along KNOWS edges" — would be a triple self-join in SQL with painful performance. Native graph engines handle this in linear time of the result.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — when to use a graph DB</span>
+  <p><strong>Good fit:</strong></p>
+  <ul>
+    <li>Social networks (friend-of-friend, recommendations).</li>
+    <li>Fraud detection (find rings of transactions).</li>
+    <li>Knowledge graphs (Wikidata, enterprise ontologies).</li>
+    <li>Network/IT topology, supply chains, identity graphs.</li>
+    <li>Any data where the <strong>relationships</strong> are as important as the entities.</li>
+  </ul>
+  <p><strong>Bad fit:</strong></p>
+  <ul>
+    <li>Tabular analytical workloads (warehouses are better).</li>
+    <li>Massive write-heavy throughput (graphs are harder to shard).</li>
+    <li>Simple lookups by key (overkill).</li>
+  </ul>
+  <p><strong>Pick</strong>: Neo4j if you can self-host; <strong>Amazon Neptune</strong> on AWS.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>How to pick a NoSQL database — the decision lens</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — decision matrix</span>
+  <table>
+    <thead><tr><th>Question to ask</th><th>If yes &rarr;</th></tr></thead>
+    <tbody>
+      <tr><td>"I just need to look things up by ID, very fast"</td><td>Key-value (Redis / DynamoDB)</td></tr>
+      <tr><td>"My records are JSON-shaped and the schema varies"</td><td>Document (MongoDB / DocumentDB)</td></tr>
+      <tr><td>"I have tons of writes, time-series, sparse columns, need to scale to many nodes"</td><td>Column-family (Cassandra / Keyspaces)</td></tr>
+      <tr><td>"My data is a network — relationships are the thing I care about"</td><td>Graph (Neo4j / Neptune)</td></tr>
+      <tr><td>"I just want SQL but distributed and at scale"</td><td>NewSQL (CockroachDB, Spanner, Aurora) &mdash; not really NoSQL</td></tr>
+      <tr><td>"I need ad-hoc analytics across billions of rows"</td><td>Data warehouse (Redshift / BigQuery / Snowflake)</td></tr>
+      <tr><td>"I need text search"</td><td>Elasticsearch / OpenSearch (technically document)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Polyglot persistence</span>
+  <p>Sadalage &amp; Fowler: "<em>using different data stores under different circumstances</em>." Relational DBs aren't going away — they became <em>one option</em> for data storage. Two trends:</p>
+  <ol>
+    <li>NoSQL DBs implement standard RDBMS features (transactions, joins).</li>
+    <li>RDBMS adopt NoSQL principles (JSON columns in Postgres, sharding extensions).</li>
+  </ol>
+  <p><strong>The end of relational?</strong> No. Real systems often combine: Postgres for orders, Redis for cache, Elasticsearch for search, S3 for blobs, Neo4j for the recommendation engine.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — exam-ready summary</span>
+  <p>If you can articulate these in 30 seconds each, you're ready:</p>
+  <ol>
+    <li><strong>Why NoSQL exists</strong> — Big Data + horizontal scale + need for flexible schema; RDBMS doesn't fit cleanly.</li>
+    <li><strong>Aggregate</strong> — a unit of data treated as one; keeps things accessed together, together; what enables sharding.</li>
+    <li><strong>CAP</strong> — can't have all three; distributed systems must tolerate partitions; the real choice is C vs A during partitions.</li>
+    <li><strong>BASE</strong> — basically available, soft state, eventually consistent; the operating philosophy for AP systems.</li>
+    <li><strong>Quorum</strong> — R + W &gt; N gives strong read consistency; W &gt; N/2 gives write consistency.</li>
+    <li><strong>The four families</strong> — KV (Redis), document (MongoDB), column-family (Cassandra), graph (Neo4j). Each optimizes a different access pattern.</li>
+  </ol>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=W2Z7fbCLSTw" target="_blank">7 Database Paradigms in 7 minutes &mdash; Fireship</a> (covers all four families)</li>
+    <li><a href="https://www.youtube.com/watch?v=BgLTDT03QtU" target="_blank">CAP Theorem in 5 minutes &mdash; ByteByteGo</a></li>
+    <li><a href="https://www.youtube.com/watch?v=jKDdSeFsNRk" target="_blank">MongoDB in 100 seconds &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=B3HamW7AjMI" target="_blank">Cassandra explained &mdash; Hussein Nasser</a></li>
+    <li><a href="https://www.youtube.com/watch?v=REVkXVxvMQE" target="_blank">Neo4j &amp; Graph databases &mdash; Fireship</a></li>
+    <li><a href="https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html" target="_blank">Reading: Martin Kleppmann &mdash; "Please stop calling databases CP or AP"</a> (post-exam nuance for the curious)</li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Sources: <code>materialy/PA195</code> (Novák &amp; Dohnal lectures, MUNI) &mdash; Lecture 1 (Why NoSQL, Overview), Lecture 3 (Principles: data model, distribution, consistency), Lecture 4 (Key-value), Lecture 6 (Document), Lecture 7 (Column-family), Lecture 8 (Graph). Primary academic references: Sadalage &amp; Fowler "NoSQL Distilled" (2012); Holubová, Kosek, Minařík, Novák "Big Data a NoSQL databáze" (2015).
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q1 Code Quality — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 1 &middot; <span class="course-code">PV260</span> <span class="course-code">PA017</span></div>
+  <h1>Code Quality</h1>
+  <p class="q-text">
+    Quality in software systems development, quality attributes and software metrics.
+    Tactics for quality assurance at the level of individual quality attributes.
+    Clean Code and SOLID principles, code refactoring.
+    Code testing, unit tests, integration tests, user and acceptance tests.
+    Debugging and performance testing.
+    Quality management process in software systems development.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>2_kvalita_kodu.md</code></div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Quality in SW development</li>
+  <li>Quality attributes</li>
+  <li>Software metrics</li>
+  <li>QA tactics per attribute</li>
+  <li>Clean Code (DRY/KISS/YAGNI)</li>
+  <li>SOLID</li>
+  <li>Refactoring</li>
+  <li>Unit / integration / system / acceptance tests</li>
+  <li>Test coverage, TDD, BDD</li>
+  <li>Debugging &amp; performance testing</li>
+  <li>Quality management process</li>
+  <li>Code smells &amp; prevention</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Quality in software systems development</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Quality is an important aspect of SW system development. It is commonly defined as <strong>the product's ability to meet requirements</strong> &mdash; so it's crucial to determine what the requirements actually are.</p>
+  <ul>
+    <li><strong>Customer requirements</strong> a.k.a. <em>external quality</em>: usability, accuracy/correctness, reliability, security, performance, etc.</li>
+    <li>To meet external quality, development must go smoothly, the product must be easy to maintain long-term (easy to modify/extend), and it must not be unnecessarily expensive (in operating costs and modification costs). This is achieved by maintaining <strong>internal quality</strong>: modularity, simplicity of units, testability, adaptability to change, code readability, reusability, scalability, portability, sustainability, adherence to standards&hellip;</li>
+    <li>Poor external quality is often a symptom of poor internal quality (bug fixes take long, system is slow&hellip;) &mdash; but not always (maybe just the UI is weak).</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p><strong>External quality is what the user sees. Internal quality is what the developer feels.</strong> Internal quality is invisible to the customer &mdash; until the team is forced to ship a hotfix and it takes 3 weeks. Then it becomes very visible.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED</span>
+  <p>The industry-standard formalization of this idea is the <strong>ISO/IEC 25010</strong> quality model, which decomposes "quality" into <em>product quality</em> (8 characteristics: functional suitability, performance efficiency, compatibility, usability, reliability, security, maintainability, portability) and <em>quality in use</em> (effectiveness, efficiency, satisfaction, freedom from risk, context coverage). You won't usually be quizzed on it, but if a question asks "list quality attributes formally," ISO 25010 is the framework cited in textbooks.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Quality attributes</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>The most important quality attributes of code are:</p>
+  <dl class="def-list">
+    <dt>Maintainability</dt>
+    <dd>Ease of modification without accumulating technical debt.</dd>
+    <dt>Performance</dt>
+    <dd>System response time (and efficiency of resource use).</dd>
+    <dt>Reliability</dt>
+    <dd>Probability of error-free operation over a given period.</dd>
+    <dt>Testability</dt>
+    <dd>How easily (and how thoroughly) the system can be tested.</dd>
+    <dt>Scalability</dt>
+    <dd>Ability of the system to handle larger volumes of data/users.</dd>
+    <dt>Security</dt>
+    <dd>Resistance against attacks.</dd>
+    <dt>Usability</dt>
+    <dd>Ease of using the system and learning to work with it; correct functionality (usually a separate point).</dd>
+  </dl>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED</span>
+  <p>Common acronyms for memorizing the most-asked subset:</p>
+  <ul>
+    <li><strong>RAS</strong> &mdash; Reliability, Availability, Scalability (an SRE-style lens)</li>
+    <li><strong>RASUI</strong> &mdash; adds Usability, Integrity</li>
+    <li><strong>"<em>-ilities</em>"</strong> &mdash; in textbooks, non-functional requirements are often called the "-ilities" because most end in <em>-ility</em>.</li>
+  </ul>
+  <p>Note the subtle distinction: <strong>availability</strong> (uptime, e.g. 99.99%) is what your SLA promises; <strong>reliability</strong> (mean-time-between-failures) is the underlying property. A system can be reliable but unavailable (correct, but the server is off) or available but unreliable (always responds, often with wrong data).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Software metrics</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Measurable aspects of a SW system (lines of code, test coverage, cyclomatic complexity&hellip;) that give us information about the overall picture &mdash; but it can be non-trivial to interpret them properly.</p>
+  <ul>
+    <li>e.g. 100% test coverage doesn't mean the system is bug-free. A large number of small classes sounds great, but the classes may be structured nonsensically and strongly coupled.</li>
+    <li>Metrics can be <strong>direct</strong> (measured directly, e.g. number of defects) or <strong>derived</strong> (calculated from direct metrics, e.g. defect density = defects per product size).</li>
+  </ul>
+  <p>Common metrics:</p>
+  <ul>
+    <li><strong>Lines of code (LOC)</strong></li>
+    <li><strong>(Non-)Commented lines of code</strong></li>
+    <li><strong>Number of classes</strong></li>
+    <li><strong>Number of functions/methods</strong></li>
+    <li><strong>Number of packages</strong></li>
+    <li><strong>Number of files</strong></li>
+    <li><strong>Class coupling</strong> &mdash; how many other classes we call</li>
+    <li><strong>Inheritance depth</strong></li>
+    <li><strong>Number of methods per class weighted by complexity</strong></li>
+    <li><strong>Cyclomatic complexity</strong> &mdash; number of independent paths through the inspected unit (usually a function) that execution may take.<br>
+      <code>CC = E - N + 2P</code> where E = edges, N = nodes, P = connected components (for a function, P = 1).<br>
+      The minimum is 1 (no branching).</li>
+  </ul>
+  <p>Often we care more about <strong>ratios/derived metrics</strong>: e.g. percentage of comments out of total lines, average method size, deviations within the project or between releases&hellip;</p>
+  <p><strong>It is dangerous to use metrics to evaluate a developer's performance.</strong></p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Goodhart's Law: <strong>"When a measure becomes a target, it ceases to be a good measure."</strong> If you reward developers by LOC, you'll get verbose code. If you reward by test coverage, you'll get "watermelon tests" (green on the outside, no real assertions inside). Metrics are <em>thermometers, not steering wheels</em>.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — cyclomatic complexity</span>
+<pre><code>// Java — what's the CC?
+int classify(int n) {
+    if (n &lt; 0) {                 // branch 1
+        return -1;
+    }
+    if (n == 0) {                // branch 2
+        return 0;
+    }
+    if (n % 2 == 0) {            // branch 3
+        return 2;
+    }
+    return 1;
+}
+</code></pre>
+  <p>Three <code>if</code>s &rArr; CC = 4 (the "+1" is the implicit fall-through path). Tools: SonarQube, Checkstyle, PMD; rule of thumb: keep methods &le; 10. Anything &gt; 15 is a refactoring candidate.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — metrics you'll meet in DevOps</span>
+  <ul>
+    <li><strong>DORA metrics</strong> &mdash; the four key process metrics from the DORA / "Accelerate" research: deployment frequency, lead time for changes, change failure rate, mean time to restore. These are about <em>delivery</em> quality, not code quality, but they tell you whether your engineering org is healthy. Jenkins / GitLab dashboards can expose all four.</li>
+    <li><strong>Code Climate / SonarQube technical debt ratio</strong> &mdash; estimated cost (in hours) to fix all maintainability issues, divided by total dev cost.</li>
+    <li><strong>Mutation score</strong> (from mutation testing tools like PIT for Java) &mdash; more honest than line coverage.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Tactics for quality assurance (per attribute)</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <dl class="def-list">
+    <dt>Maintainability</dt>
+    <dd>Refactoring into cohesive units so that the location of a needed change is minimal and easy to localize; separation of data from logic (so a unit can be replaced by another); decoupling (depending on interfaces rather than implementations).</dd>
+
+    <dt>Performance</dt>
+    <dd>
+      Caching · parallelism · asynchronous communication/processing · detecting and mitigating bottlenecks · removing adapters and simplifying communication · separation of data from logic.
+    </dd>
+
+    <dt>Reliability</dt>
+    <dd>
+      Detecting and remedying sources of unreliability · control mechanisms · proper error handling · automatic reporting of unexpected errors · timeout after a request · regular ping (initiated by the calling service) · heartbeat (a service regularly reports its status) · regular snapshots and rollback on crash · transactions · input checking at every level · removing single points of failure.
+    </dd>
+
+    <dt>Testability</dt>
+    <dd>
+      Refactoring toward dependencies on abstractions, decoupling · separation of data and logic · removing global state.
+    </dd>
+
+    <dt>Scalability</dt>
+    <dd>
+      Refactoring into simpler, independently deployable units · extracting data to allow unit parallelization · extracting and independently deploying a subsystem · distribution and/or replication of data (DB tends to be the bottleneck; other things parallelize more easily).
+    </dd>
+
+    <dt>Security</dt>
+    <dd>Bug detection and fixing · encrypted communication.</dd>
+
+    <dt>Usability</dt>
+    <dd>UX improvements · applying performance/scalability tactics when things are slow.</dd>
+  </dl>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — DevOps mapping</span>
+  <table>
+    <thead><tr><th>Attribute</th><th>Where you ensure it in your stack</th></tr></thead>
+    <tbody>
+      <tr><td>Maintainability</td><td>Code review (GitLab MRs / GitHub PRs), SonarQube quality gate, automated formatters in pre-commit hooks.</td></tr>
+      <tr><td>Performance</td><td>JMH micro-benchmarks (Java), Gatling load tests in Jenkins, CloudWatch / Grafana dashboards, X-Ray traces.</td></tr>
+      <tr><td>Reliability</td><td>Health checks (ALB target group / k8s probes), CloudWatch alarms, Terraform-managed multi-AZ deployments, blue/green or canary releases.</td></tr>
+      <tr><td>Testability</td><td>Constructor injection (Spring), Testcontainers, dependency injection over <code>static</code> singletons.</td></tr>
+      <tr><td>Scalability</td><td>Auto Scaling Groups, ECS / EKS HPA, RDS read replicas, S3 + CloudFront for static assets, SQS to decouple producers from consumers.</td></tr>
+      <tr><td>Security</td><td>IAM least-privilege, SG/NACL hardening, Secrets Manager, KMS, OWASP ZAP in CI, <code>tfsec</code>/<code>checkov</code> for Terraform.</td></tr>
+      <tr><td>Usability</td><td>Synthetic browser checks (CloudWatch Synthetics, Datadog), RUM, A/B testing infrastructure.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================ -->
+<h2>Clean Code</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Readable, easy to understand. Code is read much more often than it is written, so it's vital to make it understandable &mdash; developer time is expensive. The key is:</p>
+  <ul>
+    <li><strong>Clear naming</strong> reflecting the problem domain, sufficiently expressive (not too long or too generic &mdash; looking at you, Java). Ideally self-explanatory, no comments needed; comments are still fine for explaining the <em>why</em> or summarizing what a function does.
+      <ul>
+        <li>Consistency across the codebase is important (ideally built on the standards of the given language).</li>
+        <li>If it returns a bool, name it <code>has*()</code> or <code>is*()</code>.</li>
+        <li>Structs/classes are nouns; methods start with a verb (or are a getter).</li>
+        <li>Public APIs should be clear and simple; internally (private), longer method names are fine when they make purpose clearer.</li>
+      </ul>
+    </li>
+    <li><strong>Reasonable size of units</strong> &mdash; ideally short functions, simple classes&hellip; single-responsibility principle. The content of a unit should reflect its name.</li>
+    <li><strong>Using language/technology standards.</strong></li>
+  </ul>
+</div>
+
+<h3>DRY — Don't Repeat Yourself</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Each piece of information should be uniquely defined in exactly one place in the system.</li>
+    <li>e.g. generate documentation from source code so there isn't a second source of truth.</li>
+    <li>e.g. define a schema (Prisma) from which we generate both SQL tables and structs for our language.</li>
+    <li>e.g. pull shared functionality into its own function.</li>
+    <li>Applies to anything that can be duplicated in the system &mdash; even in processes: repeated manual test runs ⇒ automate them.</li>
+  </ul>
+</div>
+
+<h3>KISS — Keep It Simple, Stupid</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Simplicity over cleverness.</li>
+    <li>The systems that work best are the simplest ones.</li>
+    <li>There's no reason to use complex techniques on simple problems.</li>
+  </ul>
+</div>
+
+<h3>YAGNI — You Ain't Gonna Need It</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Don't build something you won't need (e.g. don't over-abstract for hypothetical future functionality unless it's truly necessary).</li>
+    <li>It's better to do a thing simply and then easily change it, than to do it universally only to find an edge case forced a full rewrite. Development proceeds in small steps.</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>The three are <em>three angles on the same idea</em>: <strong>delete, don't predict</strong>. DRY says "delete duplication." KISS says "delete cleverness." YAGNI says "delete speculation." Every line of code is a liability you have to maintain forever; don't write any you don't need <em>today</em>.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>SOLID</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <dl class="def-list">
+    <dt>S — Single Responsibility</dt>
+    <dd>Each class should have only one responsibility, i.e. there should be only one reason for a class to change. (e.g. <code>FileReader</code> should only handle reading from a file, not processing the data read. Only a change to how we read should cause <code>FileReader</code> to change.) ⇒ lower coupling, higher cohesion, more flexible code.</dd>
+
+    <dt>O — Open/Closed</dt>
+    <dd>Open for extension, closed for modification: we prefer adding new functionality to changing existing source/binary. ⇒ smaller chance of breaking things; nothing depends on the new classes. Implemented via interfaces / abstract classes. OCP increases complexity (and slightly hurts performance in languages needing dynamic dispatch), so use it judiciously where functionality changes/adds often.</dd>
+
+    <dt>L — Liskov Substitution</dt>
+    <dd>Instances of classes should be replaceable by their subclasses without breaking system behaviour &mdash; all subclasses should honour the contracts of their parents and not remove parent behaviour. A problem sign: having to explicitly check which subtype an instance is &mdash; that's what polymorphism should solve. If two classes share much functionality but aren't substitutable, refactor them to subclass a new class containing the shared behaviour.</dd>
+
+    <dt>I — Interface Segregation</dt>
+    <dd>Clients shouldn't be forced to depend on methods they don't use, i.e. prefer small, simple interfaces over large ones. (e.g. in Rust, to convert a struct to a string you just implement the <code>Display</code> trait &mdash; nothing else.)</dd>
+
+    <dt>D — Dependency Inversion</dt>
+    <dd>Modules should depend on abstractions (interfaces), not concrete implementations. Lowers module coupling; allows custom or mock implementations. Constructors should accept everything the struct depends on rather than creating resources themselves (e.g. a repo shouldn't create the DB connection itself; it should be passed via the constructor) = constructor dependency injection.</dd>
+  </dl>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — SRP violation in Java</span>
+<pre><code>// BAD — class does parsing AND persistence
+class UserService {
+    User parse(String csvLine) { ... }
+    void save(User u, Connection c) { ... }
+    void sendWelcomeEmail(User u) { ... }
+}
+
+// GOOD — three responsibilities, three classes
+class UserParser    { User parse(String csvLine); }
+class UserRepository{ void save(User u); }
+class UserNotifier  { void sendWelcomeEmail(User u); }
+</code></pre>
+  <p>Now a change to the email template doesn't risk breaking the CSV parser.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — OCP via Strategy</span>
+<pre><code>// Adding a new payment provider should NOT require editing PaymentService.
+interface PaymentProvider { Receipt charge(Money m); }
+
+class StripeProvider implements PaymentProvider { ... }
+class PayPalProvider implements PaymentProvider { ... }
+// Add ApplePayProvider later — no change to PaymentService.
+
+class PaymentService {
+    private final PaymentProvider provider;     // dependency injection (D too!)
+    PaymentService(PaymentProvider p) { this.provider = p; }
+    Receipt pay(Money m) { return provider.charge(m); }
+}
+</code></pre>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — LSP violation</span>
+<pre><code>class Rectangle { void setWidth(int w); void setHeight(int h); int area(); }
+
+class Square extends Rectangle {
+    void setWidth(int w)  { super.setWidth(w); super.setHeight(w); }
+    void setHeight(int h) { super.setWidth(h); super.setHeight(h); }
+}
+// Any code expecting Rectangle and calling setWidth(5); setHeight(10); assert area()==50;
+// will fail when handed a Square. The "is-a" relationship in math doesn't hold for behaviour.
+</code></pre>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Think of SOLID not as five rules but as <em>two themes</em>: <strong>cohesion</strong> (SRP, ISP &mdash; "keep things narrow and focused") and <strong>coupling/extensibility</strong> (OCP, LSP, DIP &mdash; "depend on contracts, not concretions, so you can swap parts").</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Refactoring</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Modifying a module such that its external behaviour does not change &mdash; only its internal structure / modifiability is improved.</li>
+    <li><strong>Before refactoring</strong>, it's important to have behaviour solidly covered by tests, so we don't accidentally change anything.</li>
+    <li>During refactoring we do <strong>nothing else</strong> (no new functionality).</li>
+    <li>Techniques (many editors support these, which makes the work easier and probably more reliable):
+      <ul>
+        <li><strong>Extract function</strong> &mdash; a piece of code acts as a unit / would need a comment ⇒ extract it into a function, give it a fitting name; can be reused elsewhere.</li>
+        <li><strong>Inline function</strong> &mdash; the opposite; good for trivial cases like <code>isMoreThanFiveEven(x)</code>.</li>
+        <li><strong>Replace function with method on struct</strong> &mdash; useful when a function uses a bundle of variables ⇒ they become fields of the struct.</li>
+        <li><strong>Move method/field</strong> from one struct to another if it makes sense (e.g. domain-wise).</li>
+        <li><strong>Extract/inline class</strong> &mdash; from a class containing a set of related fields, extract a new object the original class will contain (or inverse for inline).</li>
+        <li><strong>Early return</strong> &mdash; the function should describe the correct/error-free flow. If we detect a bad input, just <code>return</code>. Don't use <code>if-else</code>; use <code>if return</code>.</li>
+        <li><strong>Rename</strong> anything.</li>
+        <li><strong>Group many parameters into a struct</strong> (parameter object).</li>
+      </ul>
+    </li>
+  </ul>
+  <p>Code that reads and maintains well is not always the fastest/most efficient (abstractions cost). Usually a small performance drop in exchange for readability is fine, but not always.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — Early return refactoring</span>
+<pre><code>// BAD — pyramid of doom
+String greet(User u) {
+    if (u != null) {
+        if (u.isActive()) {
+            if (u.hasName()) {
+                return "Hello, " + u.getName();
+            } else { return "Hello, friend"; }
+        } else { return "Account inactive"; }
+    } else { return "Unknown user"; }
+}
+
+// GOOD — early returns
+String greet(User u) {
+    if (u == null)        return "Unknown user";
+    if (!u.isActive())    return "Account inactive";
+    if (!u.hasName())     return "Hello, friend";
+    return "Hello, " + u.getName();
+}
+</code></pre>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <p><a href="https://www.youtube.com/watch?v=DC-pQPq0acs" target="_blank">Refactoring &mdash; Code Smells and Their Refactorings (CodeAesthetic)</a> &mdash; visual, short, excellent for the refactoring section.</p>
+  <p><a href="https://www.youtube.com/watch?v=tMW08JkFrBA" target="_blank">SOLID Principles in 8 minutes (ByteByteGo)</a></p>
+</div>
+
+<!-- ============================================ -->
+<h2>Testing</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Testing = the process of evaluating whether the system meets specified requirements&hellip; easier said than done.</p>
+  <ul>
+    <li>In practice testing is usually <strong>incomplete</strong>. Testing reveals defects; it does not prove correctness.</li>
+    <li>Each test should test only one thing/property/feature; ideally lots of small tests so the source of a problem is easy to find.</li>
+    <li>Ideally testing is done by someone <em>other</em> than the author of the code being tested.</li>
+  </ul>
+  <p>Categories by knowledge of internals:</p>
+  <ul>
+    <li><strong>Whitebox (structural)</strong> &mdash; we can see source and direct inputs at critical points (off-by-one, zero division&hellip;). e.g. unit, integration, performance tests.</li>
+    <li><strong>Blackbox (functional)</strong> &mdash; we don't see what's happening inside, only inputs and outputs. e.g. acceptance, system tests.</li>
+  </ul>
+  <p>If you hit a bug for which there was no test, fix it <em>and</em> add a (preferably automated) test so the bug can't recur.</p>
+  <ul>
+    <li><strong>Regression testing</strong> &mdash; checking that changes haven't broken existing (automated) tests.</li>
+    <li><strong>Smoke testing</strong> &mdash; checks that selected critical functions work in a new environment. If not, there's no point in deploying or running further tests.</li>
+    <li><strong>Sanity testing</strong> &mdash; like smoke, but to verify a bug fix / new functionality.</li>
+    <li><strong>A/B testing</strong> &mdash; two variants in production; we measure which is more successful (typically for UI).</li>
+  </ul>
+  <p>:hahaa: In practice, some "experts" practice <strong>watermelon testing</strong> &mdash; green on the outside, red on the inside :hahaa:</p>
+  <ul>
+    <li>Test quality can be verified with <strong>mutation testing</strong>. We inject defects (mutating source via operator negation, off-by-one, dropped calls&hellip;) and see how many are caught by tests. If something passes, it's a candidate for new tests.</li>
+    <li>Some scenarios are riskier (can be assessed during analysis) and should get more testing attention.</li>
+    <li>Inputs should be split into categories (e.g. &lt;0, 0, &gt;0); pick a few representatives from each.</li>
+    <li>Make invalid states unrepresentable (Rust enums &lt;3, builder pattern, state machines&hellip;).</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Edsger Dijkstra: <em>"Program testing can be used to show the presence of bugs, but never to show their absence."</em> The goal isn't to prove correctness &mdash; the goal is to <em>cheaply find bugs early</em>.</p>
+</div>
+
+<h3>Test coverage</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Coverage = the share of code that has been exercised by at least one test, usually in %.
+      <ul>
+        <li><strong>Line / statement coverage</strong> &mdash; lines / statements covered.</li>
+        <li><strong>Function coverage</strong> &mdash; was the function called at least once?</li>
+        <li><strong>Branch coverage</strong> &mdash; logical branches covered.</li>
+        <li><strong>Condition coverage</strong> &mdash; each boolean condition evaluated as both true and false.</li>
+      </ul>
+    </li>
+    <li>100% is often not possible (redundant defensive tests, better-safe-than-sorry), and 100% coverage doesn't mean bug-free.</li>
+    <li>Some parts are harder to cover than others.</li>
+    <li>Coverage helps find untested code but says little about <em>test quality</em>.</li>
+  </ul>
+</div>
+
+<h3>Unit tests</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Validate that an isolated unit of code (function / class) behaves as expected.</li>
+    <li>White box.</li>
+    <li>Automated, fast, simple, readable, deterministic, each tests one thing.</li>
+    <li>Isolated from the rest of the system via <em>test doubles</em> &mdash; fake dependencies:
+      <ul>
+        <li><strong>Dummy</strong> object &mdash; never used, but needed as a parameter.</li>
+        <li><strong>Fake</strong> &mdash; for tests only; simple but not usable in production (e.g. in-memory DB).</li>
+        <li><strong>Stub</strong> &mdash; always returns the same thing.</li>
+        <li><strong>Spy</strong> &mdash; remembers how and with what it was called (e.g. "the send-email method was called with this body").</li>
+        <li><strong>Mock</strong> &mdash; pre-programmed (when called with A, do X, otherwise Y).</li>
+      </ul>
+    </li>
+    <li><strong>AAA</strong> — <em>Arrange</em> (setup), <em>Act</em> (execute), <em>Assert</em> (verify) &mdash; three phases; act should be as short as possible.</li>
+    <li>e.g. <code>cargo test</code>, Jest, JUnit.</li>
+    <li>Advanced techniques: source analysis + input generation (symbolic execution), formal verification with mathematical proofs, model checking&hellip;</li>
+  </ul>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — JUnit + Mockito AAA</span>
+<pre><code>@Test
+void chargesCardAndRecordsReceipt() {
+    // ARRANGE
+    PaymentProvider stub = mock(PaymentProvider.class);
+    when(stub.charge(any())).thenReturn(new Receipt("R-1"));
+    Ledger ledger = mock(Ledger.class);
+    PaymentService svc = new PaymentService(stub, ledger);
+
+    // ACT
+    Receipt r = svc.pay(Money.eur(42));
+
+    // ASSERT
+    assertEquals("R-1", r.id());
+    verify(ledger).record(r);          // spy-style verification
+    verify(stub).charge(Money.eur(42));
+}
+</code></pre>
+</div>
+
+<h3>Integration tests</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Check whether units interact as expected.</li>
+    <li>Slower, larger and more complex than unit tests.</li>
+    <li>Black / white box.</li>
+    <li>For UI testing, use <em>Playwright</em> (previously Selenium).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Testcontainers</span>
+  <p>For backend integration tests in Java, the de-facto standard is <strong>Testcontainers</strong> &mdash; it spins up real Docker containers (Postgres, Kafka, LocalStack for AWS) for the test, then tears them down. You get tests that run against the real database driver, not an H2 imitation. Critical for catching SQL-dialect issues before prod.</p>
+</div>
+
+<h3>System tests</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Verify the system meets specified requirements.</li>
+    <li>Test usability, capacity, performance, functional completeness, security&hellip;</li>
+    <li>Benchmarking, penetration testing, user testing&hellip;</li>
+    <li>Can be automated via a programmatically driven browser (Playwright, formerly Selenium, Puppeteer).</li>
+    <li>Black box.</li>
+  </ul>
+</div>
+
+<h3>Acceptance tests</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Verify the system meets <em>business</em> requirements and is ready for release.</li>
+    <li>May take the form of ticking off boxes against requirements the customer set in advance.</li>
+    <li>Performed with the customer.</li>
+    <li>Black box.</li>
+  </ul>
+</div>
+
+<h3>Test-driven development (TDD)</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Three phases &mdash; <em>red, green, blue</em> &mdash; iterated. Each phase aims for one thing only:</p>
+  <ul>
+    <li><strong>Red / test</strong> &mdash; write a failing test for the smallest piece of functionality.</li>
+    <li><strong>Green / write</strong> &mdash; implement it as simply as possible so the test passes (and doesn't break others).</li>
+    <li><strong>Blue / refactor</strong> &mdash; clean up the implementation to standards.</li>
+  </ul>
+</div>
+
+<h3>Behaviour-driven development (BDD)</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>With the customer, write the system's behaviour as scenarios.</li>
+    <li>Scenarios serve devs and testers alike.</li>
+    <li>e.g. Gherkin, Cucumber &mdash; <code>given / when / then</code> (like AAA) define scenarios in an English-like language customers can read; the same scenarios appear in tests.</li>
+  </ul>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — Gherkin</span>
+<pre><code>Feature: Password reset email
+
+  Scenario: User receives reset link
+    Given a user with email "alice@acme.com" exists
+    When  she submits the password-reset form
+    Then  she receives an email containing a one-time reset link
+    And   the link expires in 60 minutes
+</code></pre>
+</div>
+
+<!-- ============================================ -->
+<h2>Debugging and performance testing</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>The goal is identifying and solving problems related to speed, response time and throughput &mdash; finding the system's limits.</p>
+  <ul>
+    <li><strong>Load testing</strong> &mdash; how the system handles longer-term load.</li>
+    <li><strong>Stress testing</strong> &mdash; how the system handles short-term load spikes (a sudden surge of requests).</li>
+  </ul>
+  <p>A running system should also be <strong>monitored long-term</strong> to surface further weak spots.</p>
+  <p>Performance can generally be increased at the expense of other attributes (e.g. maintainability), so picking the right trade-off matters.</p>
+  <p>Tools: Gatling, Siege, LoadRunner.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — debugging discipline</span>
+  <p>"Debugging" wasn't elaborated in the repo. A few canonical techniques the examiner may expect:</p>
+  <ul>
+    <li><strong>Reproduce first.</strong> A bug you can't reproduce is a bug you can't fix; invest in repro before in fix.</li>
+    <li><strong>Bisect.</strong> <code>git bisect</code> &mdash; binary search across commits to find which commit introduced a regression.</li>
+    <li><strong>Rubber-duck.</strong> Explaining the bug aloud forces you to articulate hidden assumptions.</li>
+    <li><strong>Hypothesis-driven.</strong> "If X is the cause, I should see Y. Let's verify." Avoid shotgun debugging.</li>
+    <li><strong>Logging vs. step-through debugger</strong> &mdash; both have a place. Concurrency / async bugs usually need <em>logging</em> (debugger changes timing). Algorithm bugs usually need a <em>debugger</em>.</li>
+    <li><strong>Post-mortems.</strong> Once fixed, ask: <em>how did the bug get past tests?</em> Add the missing test.</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — performance testing types</span>
+  <table>
+    <thead><tr><th>Type</th><th>What it answers</th></tr></thead>
+    <tbody>
+      <tr><td>Load test</td><td>Does the system meet SLA under expected normal load?</td></tr>
+      <tr><td>Stress test</td><td>What is the breaking point? How does it fail?</td></tr>
+      <tr><td>Soak / endurance</td><td>Memory leaks? Resource exhaustion over hours/days?</td></tr>
+      <tr><td>Spike test</td><td>Recovery from a sudden 10&times; surge.</td></tr>
+      <tr><td>Capacity test</td><td>What's the largest load that still meets SLA?</td></tr>
+      <tr><td>Volume / DB test</td><td>Behaviour with very large data sets.</td></tr>
+    </tbody>
+  </table>
+  <p>In your stack: Gatling pipelines triggered by Jenkins, results in Grafana; or AWS Distributed Load Testing solution for synthetic large-scale runs.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Quality management process</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>The quality management process in SW development consists of:</p>
+  <ul>
+    <li><strong>Defining</strong> SW quality requirements and planning &mdash; specifying functional and non-functional requirements, setting evaluation criteria, risks, metrics, detailing activities to ensure quality.</li>
+    <li><strong>Assuring</strong> SW quality &mdash; defining and overseeing processes that prevent defects (including CI/CD setup).</li>
+    <li><strong>Controlling</strong> SW quality &mdash; checking whether the product or its parts meet requirements (including quality requirements) and that development follows the defined processes; monitoring whether we're sticking to processes and goals.</li>
+    <li><strong>Improving</strong> quality &mdash; striving to improve processes to improve quality.</li>
+  </ul>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Capability Maturity Model</span>
+  <p>Defines an organisation's maturity levels for quality assurance:</p>
+  <ol>
+    <li><strong>Initial</strong> &mdash; chaos; unpredictable cost, schedule.</li>
+    <li><strong>Repeatable</strong> &mdash; intuitive; cost and quality vary; plan under conscious control; informal methods.</li>
+    <li><strong>Defined</strong> &mdash; quality-oriented; reliable cost &amp; plan; system performance still unpredictable.</li>
+    <li><strong>Managed</strong> &mdash; measurement; deliberate, statistically managed product quality.</li>
+    <li><strong>Optimising</strong> &mdash; automation, process improvement, defect prevention, tech innovation.</li>
+  </ol>
+</div>
+
+<h3>Prevention of quality problems</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Following best practices and conventions &mdash; general (SOLID, Clean Code) and language-specific (eslint, <code>cargo fmt</code>).</li>
+    <li>Using design-pattern principles.</li>
+    <li>TDD, pair programming, code reviews.</li>
+    <li>Process standards (ITIL); agile techniques (Scrum, Kanban).</li>
+    <li>Automated testing, CI.</li>
+    <li>Communication, ubiquitous language.</li>
+    <li><strong>Fail-fast</strong> &mdash; detect input problems early rather than blindly accept anything and be surprised later.</li>
+    <li><strong>Design by Contract</strong> &mdash; methods may require a contract (assertions) so they can guarantee outputs. Use conditional compilation to keep contracts in dev only (but you lose precise problem-location info in prod).</li>
+  </ul>
+  <p>Non-functional quality problems are addressed by <strong>architecture</strong>. To prevent them, build a model and simulate requirements (e.g. ability to serve N requests in T seconds) and derive per-component constraints (e.g. max processing time per component).</p>
+  <p>For verification, <strong>formal verification</strong> is sometimes used (e.g. for algorithm correctness).</p>
+</div>
+
+<h3>Detection of quality problems</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li><strong>Code reviews</strong> (peer between devs), <strong>inspections</strong> (formal &mdash; use a form to ensure preparedness, filter trivia; focus on correctness, standards, not style).</li>
+    <li>(Automated) testing (<code>cargo test</code>).</li>
+    <li><strong>Static analysis</strong> (<code>cargo clippy</code>, borrow checker, SonarQube) &mdash; we don't run the code.</li>
+  </ul>
+</div>
+
+<h3>Tracking quality problems</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Issue tracking.</li>
+    <li>Technical-debt management (tracking, allocating time to pay down).</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Bad code &amp; code smells</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Bad-code symptoms</span>
+  <ul>
+    <li>Mixed levels of abstraction.</li>
+    <li>Low cohesion (mega-classes, long functions&hellip;).</li>
+    <li>Circular dependencies (implementation coupling, hard to follow, hard to test, maintain, scale).</li>
+    <li>Code duplication.</li>
+    <li>Too many parameters.</li>
+    <li>Bad names.</li>
+    <li>Being too "clever" when it's not needed.</li>
+    <li>Not following standards / suitable language constructs.</li>
+    <li>Magic constants.</li>
+  </ul>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Code smells &amp; cures (per attribute)</span>
+  <p><em>Tactics can conflict (e.g. maintainability vs performance) &mdash; pick what you're optimising for!</em></p>
+  <dl class="def-list">
+    <dt>Maintainability</dt>
+    <dd>Premature optimisation ⇒ profile first, then optimise. Excessive flexibility ⇒ start simple, extend later. Cleverness ⇒ keep foundations simple. Not using standards / patterns. Low modularization.</dd>
+    <dt>Performance</dt>
+    <dd>Redundant work ⇒ caching, memoization, bottom-up DP. Sequential search ⇒ binary search, smarter algorithms, sorted collections, parallelization go brrrr. Long critical sections in multithreaded programs ⇒ minimize critical sections, possibly multiple locks. Active waiting ⇒ async processing, get notified when the op completes.</dd>
+    <dt>Reliability</dt>
+    <dd>Trusting input blindly. Bad error/exception handling. Assuming functions are only called in one order. Hype-train: using tech we don't fully understand. No logging. Single point of failure killing the whole system ⇒ multiple services, restart/recover, auto-failover.</dd>
+    <dt>Testability</dt>
+    <dd>Global state. Hidden dependencies (prefer DI over <code>init()</code> globals). Cross-unit communication that shouldn't exist ⇒ SOLID. Hacks needed to test ⇒ SOLID. Nondeterminism (time, randomness, global state, DB&hellip; watch out for Rust <code>HashMap</code> iteration order). Init logic mixed with app logic.</dd>
+    <dt>Scalability</dt>
+    <dd>Monolith. Distribution increases capacity/perf but adds overhead &mdash; harder testing, deployment, security.</dd>
+  </dl>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP</span>
+  <p>The examiner often wants you to <strong>name the attribute and then name two or three concrete tactics</strong> for it. Don't enumerate everything &mdash; pick 2&ndash;3 strong ones and give a one-line example. e.g. <em>"For testability: dependency injection (constructor takes a <code>Clock</code> so we can inject a fixed clock in tests), no global state, separation of init from logic."</em></p>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical examples — putting it together</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — end-to-end example</span>
+  <p>You're shipping a new <code>refund</code> endpoint in a Java/Spring service deployed to ECS via Jenkins + Terraform. Quality concerns and where they live:</p>
+  <ol>
+    <li><strong>Define</strong> &mdash; acceptance criteria written in Gherkin in the Jira ticket. NFRs reference the existing wiki page ("p99 latency &lt; 300 ms; refund must be idempotent within 24 h").</li>
+    <li><strong>Assure</strong> &mdash;
+      <ul>
+        <li>Pre-commit: <code>spotless</code> formatter, <code>checkstyle</code>.</li>
+        <li>CI: <code>mvn verify</code> runs unit + integration tests (Testcontainers Postgres), <code>jacoco</code> enforces ≥80% branch coverage on changed files, <code>sonar-scanner</code> blocks merge if new code introduces critical issues.</li>
+        <li>Terraform: <code>tfsec</code> + <code>checkov</code> in pipeline.</li>
+      </ul>
+    </li>
+    <li><strong>Control</strong> &mdash;
+      <ul>
+        <li>Pre-deploy smoke test against staging.</li>
+        <li>Post-deploy: CloudWatch synthetic canary hits <code>/refund</code> every minute.</li>
+        <li>Alarms on p99 latency &amp; error rate route to PagerDuty.</li>
+      </ul>
+    </li>
+    <li><strong>Improve</strong> &mdash; weekly review of DORA metrics in Grafana; blameless post-mortem template for every Sev-2+ incident.</li>
+  </ol>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH — recap videos</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=7EmboKQH8lM" target="_blank">SOLID Principles &mdash; Christopher Okhravi (full playlist)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=Dt5w5LBb5LE" target="_blank">Continuous Integration in 100 Seconds (Fireship)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=Wf3WXYaMt8E" target="_blank">DRY KISS YAGNI in 5 minutes</a></li>
+    <li><a href="https://martinfowler.com/bliki/TestPyramid.html" target="_blank">Martin Fowler &mdash; Test Pyramid (reading, 5 min)</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Source for FROM REPO blocks: <a href="../2_kvalita_kodu.md">2_kvalita_kodu.md</a>. Translated to English and lightly re-structured. All <span class="tag added">ADDED</span> blocks are mine.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

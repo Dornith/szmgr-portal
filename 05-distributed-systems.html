@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q5 Distributed Systems — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 5 &middot; <span class="course-code">PA053</span></div>
+  <h1>Distributed Systems</h1>
+  <p class="q-text">
+    Basic concepts, principles. Difference between centralized and distributed system architecture,
+    disadvantages of both and how to overcome them. Replication, data sharing.
+    Service-oriented architecture (SOA), web services.
+    Examples of existing technologies and their use. Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>7_distribuovane_systemy.md</code></div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Basic concepts &amp; principles</li>
+  <li>Architectures (monolith, tiered, hexagonal, pipeline, SOA, microservices)</li>
+  <li>RPC / message queues</li>
+  <li>Centralized vs distributed</li>
+  <li>ACID vs BASE</li>
+  <li>Replication / data sharing</li>
+  <li>SOA</li>
+  <li>Web services (SOAP, REST, GraphQL)</li>
+  <li>CAP theorem</li>
+  <li>Real-world tech</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Basic concepts &amp; principles</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>A <strong>distributed system</strong> consists of components (computers) connected by a communication network. Distributed systems solve problems (computations / request handling) by cooperation among individual components (each does something). This makes the system easier to scale (strengthen the troubled subsystem).</p>
+  <p>Architectures are described in Q1; here's a summary:</p>
+  <dl class="def-list">
+    <dt>Monolithic architecture</dt>
+    <dd>Contains everything the system needs; only vertical scaling is possible; poor reliability (one crash crashes everything).</dd>
+
+    <dt>Tiered architecture <em>(not to be confused with layered)</em></dt>
+    <dd>Individual tiers can be distributed, parallelized, swapped (via APIs). Client can be thin/thick depending on provided functionality; classic tiers are client, server, database.</dd>
+
+    <dt>Hexagonal / Microkernel / Component-based</dt>
+    <dd>The base app provides minimal functionality; the rest is delivered via plug-in components communicating over predefined APIs. Components can be plugged in at runtime. Alternatively: wrap a legacy system we can't afford to rewrite as a component accessed through our compatible interface. Developing component systems is harder (defining the interface is tricky), but yields better adaptability/reuse. E.g. VSCode extensions; Jakarta Enterprise Edition's Java Beans.</dd>
+
+    <dt>Pipeline architecture</dt>
+    <dd>Sequential processing; each component is responsible for a small input&rarr;output transformation (do one thing well).</dd>
+
+    <dt>Service-Oriented Architecture (SOA)</dt>
+    <dd>(see dedicated section)</dd>
+
+    <dt>Microservice architecture</dt>
+    <dd>High cohesion, low coupling between services; system is a large number of small services. Fast inter-service communication matters (gRPC). Services don't share a DB.</dd>
+  </dl>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — RPC, queues, brokers</span>
+  <p><strong>Remote Procedure Call</strong> allows executing a pre-exposed procedure between processes (even on a remote machine) as if calling it directly in code. The procedure may be implemented in a different language. An interface definition is part of it, from which callable functions/structs for the calling language are generated. The de-facto standard is <strong>gRPC</strong>. For fullstack TypeScript apps, <strong>tRPC</strong> is popular. In PA053 the course discussed <strong>CORBA</strong> (focused on Java but also supporting other languages; not just RPC but an architecture for inter-object communication in a distributed environment), but it's largely unused in new systems due to complexity / better alternatives &mdash; replaced by simpler SOAP and REST, or RPC (gRPC, on HTTP/2, binary-serializing via Protocol Buffers).</p>
+  <p>For communication in DS, besides RPC, we use <strong>message queues</strong> and <strong>event brokers</strong> that allow publish-subscribe communication, or one-of-many consumption, and can persistently store messages (handy for transactional processing, reliability against outages). Distinguish:</p>
+  <ul>
+    <li><strong>Queue</strong> &mdash; classic queue; we expect one consumer per message.</li>
+    <li><strong>Topic</strong> &mdash; message goes to all listeners.</li>
+  </ul>
+  <p>e.g. <a href="https://www.youtube.com/watch?v=uvb00oaa3k8">Apache Kafka</a>, <a href="https://www.youtube.com/watch?v=NQ3fZtyXji0">RabbitMQ</a>.</p>
+  <p>Alternatively for communication: REST, or (for low-level control and perf) raw socket communication.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Cloud</span>
+  <p>Advantage: use a platform/infra as a service without having to operate it / make a costly initial investment. Compute power can be (auto)scaled based on load. Physical resources can be shared, lowering cost and allowing compute demand distribution (peaks in different apps at different times can be served by one machine). Data centres can be chosen by proximity to customers.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Grid computing</span>
+  <p>Computing very demanding tasks across many resources (e.g. volunteer-based Folding@home). A resource can be CPU, storage, special device&hellip;</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Batch vs Stream processing</span>
+  <figure><img src="../img/20230602104120.png" alt="Batch vs stream"></figure>
+  <p>In batch processing we distribute via individual jobs; job scheduling matters (a queue may suffice).</p>
+  <p>Stream: e.g. Apache Kafka.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — MapReduce</span>
+  <p>Data is transformed via <strong>MAP</strong> (1:1) and <strong>REDUCE</strong> (N:1). Mappers are trivially parallel (same or different ops); reducers a bit trickier &mdash; parallelize different ops. e.g. Apache Hadoop.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — distributed systems theory you may be asked</span>
+  <dl class="def-list">
+    <dt>CAP theorem (Brewer)</dt>
+    <dd>In presence of a network <em>P</em>artition, a distributed data store can only guarantee one of <em>C</em>onsistency (every read sees the latest write) or <em>A</em>vailability (every request gets a non-error response) &mdash; not both. In normal operation you can have CA; the choice CP vs AP only matters during a partition.</dd>
+    <dt>PACELC</dt>
+    <dd>Refinement: if <em>P</em>artition, choose <em>A</em> or <em>C</em>; <em>E</em>lse (no partition), choose between <em>L</em>atency and <em>C</em>onsistency.</dd>
+    <dt>FLP impossibility</dt>
+    <dd>In an asynchronous system with even one faulty process, no deterministic consensus algorithm exists. Practical algorithms (Paxos, Raft) add timing assumptions or randomness.</dd>
+    <dt>Two Generals Problem</dt>
+    <dd>Two armies can't reliably coordinate over an unreliable channel even with ACKs of ACKs. The reason exactly-once delivery is impossible in the general case &mdash; we settle for at-least-once + idempotency, or at-most-once.</dd>
+    <dt>Eight fallacies of distributed computing</dt>
+    <dd>Things people wrongly assume: (1) network is reliable, (2) latency is zero, (3) bandwidth is infinite, (4) network is secure, (5) topology doesn't change, (6) there is one administrator, (7) transport cost is zero, (8) the network is homogeneous. Memorise this list &mdash; it shows up.</dd>
+  </dl>
+</div>
+
+<!-- ============================================ -->
+<h2>Centralized vs distributed</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>The main difference: centralized architecture concentrates data and logic in one place; distributed disperses logic across multiple independent components (possibly on separate machines) that communicate.</p>
+  <h4>Disadvantages of centralized &amp; how to overcome</h4>
+  <ul>
+    <li>No horizontal scaling ⇒ scale vertically.</li>
+    <li>A part fails ⇒ the whole fails ⇒ redundancy, hot/cold spares.</li>
+    <li>Low flexibility, high coupling ⇒ emphasize code quality.</li>
+  </ul>
+  <h4>Disadvantages of distributed &amp; how to overcome</h4>
+  <ul>
+    <li>Overall complexity, harder admin.</li>
+    <li>Need more / more complex communication, harder sync, latency-sensitive ⇒ use message queues, gRPC, eventual consistency.</li>
+  </ul>
+  <p>Versus centralized, distributed systems:</p>
+  <ul>
+    <li>Don't have ACID transactions but <strong>BASE</strong>:
+      <ul>
+        <li><strong>BAsically available</strong> &mdash; a part not working doesn't make the whole unusable; the rest functions. e.g. Netflix's search may be broken but everything else runs fine. Every query gets some answer.</li>
+        <li><strong>Soft state</strong> &mdash; changes in the system can happen even without incoming queries &mdash; the system propagates data to reach consistency.</li>
+        <li><strong>Eventually consistent</strong> &mdash; data may not be consistent immediately after a query response but will be after a while.</li>
+      </ul>
+    </li>
+    <li>Failure of a part doesn't kill the whole.</li>
+    <li>More flexible to modify thanks to low coupling.</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — ACID vs BASE</span>
+  <p>Translation: a relational DB transaction says "<em>I'll wait until I'm sure of the right answer.</em>" A BASE-style distributed system says "<em>Here's an answer I'm pretty sure about; I'll fix it later if I'm wrong.</em>" Banking still picks ACID. Twitter, Instagram, and most read-heavy social apps pick BASE.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Replication &amp; data sharing</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Distributed systems use <strong>replication</strong> for various reasons. In distributed databases (Apache Cassandra) / filesystems (Apache Hadoop) this is for security / availability / outage prevention; in general we use replication to ensure faster responses. A central DB used for sharing data can become the bottleneck &rarr; use a distributed DB that handles replication internally, or multiple DBs that may be simpler (MongoDB), because by distributing data we drop ACID and operate with BASE. Caching (Redis) also creates a form of replication. With replication we must handle data invalidation after changes (timeout, or CQRS).</p>
+  <p>Replication is desirable for <strong>content delivery networks (CDN)</strong>, where we keep static assets (web, images) as close to the user as possible for fast loading.</p>
+  <p>NoSQL DBs typically have mechanisms for automatic replication/distribution between nodes. <strong>Sharding</strong> can be used (break data; each node owns its domain) for data distribution, and/or <strong>master-slave replication</strong> for read scaling (apps with frequent reads) and outage prevention (master crashes, one slave becomes the new master) &mdash; the master pushes write updates to the slaves.</p>
+  <p>For data sharing (events), <strong>Apache Kafka</strong> can be used &mdash; a platform for streaming data stored in logs. For sharing info about services in a DS, you can use <strong>Apache ZooKeeper</strong>.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — consistency models you might be asked to compare</span>
+  <ul>
+    <li><strong>Strong / linearizable</strong> &mdash; reads always see the most recent committed write. Feels like a single machine.</li>
+    <li><strong>Sequential consistency</strong> &mdash; all operations appear in some global order all clients agree on, but not necessarily the real-time order.</li>
+    <li><strong>Causal consistency</strong> &mdash; writes causally related (one happened-before another) are seen in order by all; concurrent writes may be seen in different orders.</li>
+    <li><strong>Eventual consistency</strong> &mdash; if no new writes occur, all replicas eventually converge.</li>
+    <li><strong>Read-your-writes</strong> / <strong>monotonic reads</strong> &mdash; session-scoped weaker guarantees.</li>
+  </ul>
+  <p>Replication patterns:</p>
+  <ul>
+    <li><strong>Single-leader</strong> (a.k.a. primary/replica): one node accepts writes, replicates to others. Simple; the leader is a write bottleneck and SPOF until failover.</li>
+    <li><strong>Multi-leader</strong>: multiple nodes accept writes (e.g. per-region). Needs conflict resolution.</li>
+    <li><strong>Leaderless / Dynamo-style</strong> (Cassandra, Riak): clients write to any N replicas; reads use quorum (R + W &gt; N for strong consistency).</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Service-Oriented Architecture (SOA)</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>A hybrid between microservices and monolith, a fairly pragmatic architecture for scalable systems. The system is made of mutually independent, independently deployable, and mutually communicating services (typically 4&ndash;12) that contain cohesive units of functionality (e.g. users, product management, orders, payments, mail&hellip;). Each service can be scaled independently. A facade layer can sit over the services to provide a unified API. Services often share a database, but it can be broken into multiple independent ones. Harder to develop, but the whole system is more maintainable and scalable thanks to modularization.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — SOA vs Microservices</span>
+  <table>
+    <thead><tr><th>Aspect</th><th>SOA</th><th>Microservices</th></tr></thead>
+    <tbody>
+      <tr><td>Service size</td><td>4&ndash;12 medium services</td><td>Many small services</td></tr>
+      <tr><td>Database</td><td>Often shared</td><td>Per-service DB</td></tr>
+      <tr><td>Communication</td><td>SOAP/ESB historically; REST or messaging</td><td>REST, gRPC, async messaging</td></tr>
+      <tr><td>Integration</td><td>Heavy ESB (Enterprise Service Bus) common</td><td>Smart endpoints, dumb pipes</td></tr>
+      <tr><td>Governance</td><td>Top-down, central registry</td><td>Decentralised, per-team</td></tr>
+      <tr><td>When to use</td><td>Enterprise systems needing rationalization of many tools</td><td>Internet-scale, fast-moving product teams</td></tr>
+    </tbody>
+  </table>
+  <p>Modern view: microservices are SOA done with lessons learned (smaller services, lighter integration, polyglot, automation-heavy).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Web services</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Components enabling communication and interaction via standardized protocols and formats. Based on Service-Oriented Architecture. Web services abstract their functionality behind a web API. A definition language formally describes the schema/interface of a service; client code can be generated for various languages to ease use. The schema can be generated from source code via annotations.</p>
+  <p>Historically: web services on <strong>SOAP</strong> (Simple Object Access Protocol) + <strong>XML</strong>, defined via <strong>WSDL</strong> (Web Service Definition Language).</p>
+  <p>Now: <strong>REST</strong> (Representational State Transfer; not a protocol but an architectural style) + <strong>JSON</strong> (other formats possible), defined via <strong>OpenAPI Specification</strong>; or <strong>GraphQL</strong> (+ JSON) with <strong>GraphQL Schema</strong> and its query language. GraphQL uses one entrypoint (+1 playground) and allows precise specification of desired data (down to field level), solving over-fetching (one query returns extra) and under-fetching (one query lacks data, forcing multiple).</p>
+  <p><em>SOAP is transport-independent; REST uses HTTP. REST is simpler, faster, more efficient. SOAP allows targeting one message to many recipients, transit through intermediaries (who can process the header; the body is for the recipient). SOAP supports exchanging structured, typed XML data; the SOAP header (optional) can carry metadata, QoS, security info, SAML data, session identifier (cookie)&hellip;; the SOAP envelope is the root XML element (namespace = protocol version, encoding); the SOAP body contains the actual message. REST allows linkage (via hyperlinks) and can take you off our system entirely.</em></p>
+  <p><em>REST views the web as resources addressable by URL that return a representation (HTML, XML, PNG, JSON&hellip;). Receiving data transitions the client to a state which can be transformed by accessing another resource. Stateless &mdash; every message contains everything needed to interpret it (correctly, the message shouldn't contain a cookie but e.g. a JWT). Queries are cacheable.</em></p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — REST maturity (Richardson Model)</span>
+  <ol>
+    <li><strong>Level 0</strong> &mdash; "the swamp of POX": one URL, one verb (POST), XML/JSON tunneled inside. Essentially RPC over HTTP.</li>
+    <li><strong>Level 1</strong> &mdash; Resources: multiple URLs (<code>/users/42</code>), but still mostly POST.</li>
+    <li><strong>Level 2</strong> &mdash; HTTP verbs: GET reads, POST creates, PUT updates, DELETE deletes. Most so-called REST APIs stop here.</li>
+    <li><strong>Level 3</strong> &mdash; HATEOAS (Hypermedia as the engine of application state): the response contains links to related actions, so clients can navigate dynamically. Rare in practice.</li>
+  </ol>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — same operation, three styles</span>
+<pre><code>// REST
+GET  /users/42/orders?status=pending HTTP/1.1
+Authorization: Bearer …
+
+// GraphQL
+POST /graphql
+{
+  user(id: 42) {
+    orders(status: PENDING) { id total }
+  }
+}
+
+// gRPC (over HTTP/2, binary)
+// .proto:
+// rpc GetUserOrders(GetUserOrdersRequest) returns (OrderList);
+// client call:
+GetUserOrders(user_id=42, status=PENDING)
+</code></pre>
+  <p>Choose REST for public APIs, GraphQL for client-controlled fetching (mobile, dashboard apps), gRPC for high-perf internal service-to-service.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — communication patterns in DS</span>
+  <dl class="def-list">
+    <dt>Synchronous request/response</dt>
+    <dd>REST, gRPC. Simple, low-latency, tightly coupled to availability of the callee.</dd>
+    <dt>Asynchronous messaging — queue</dt>
+    <dd>RabbitMQ, SQS. Producer doesn't wait. Decouples availability. Each message processed by exactly one consumer.</dd>
+    <dt>Pub/Sub — topic</dt>
+    <dd>Kafka, SNS, MQTT. One publisher, many subscribers each get a copy.</dd>
+    <dt>Event sourcing</dt>
+    <dd>State is derived by replaying an append-only event log. Strong audit trail; rebuilding views is easy.</dd>
+    <dt>CQRS — Command/Query Responsibility Segregation</dt>
+    <dd>Separate write model from read model. Often pairs with event sourcing.</dd>
+    <dt>Saga pattern</dt>
+    <dd>Distributed transaction as a sequence of local transactions with compensating actions on failure. Used because 2-phase commit is unavailable across microservices.</dd>
+  </dl>
+</div>
+
+<!-- ============================================ -->
+<h2>Notes from the repo</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <dl class="def-list">
+    <dt>Middleware</dt>
+    <dd>A software layer providing an interface for interacting with various services/systems; an abstraction over often-used functionality; possibly a layer linking existing systems.</dd>
+  </dl>
+  <p>e.g. CORBA, Web Services, REST, message-queue systems, event brokers.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical examples</h2>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — splitting a monolith into services</span>
+  <p>Suppose you have a monolithic e-commerce app (Java/Spring). You decide to extract three services:</p>
+  <ol>
+    <li><strong>Catalog Service</strong> &mdash; products, categories. REST API; reads dominate; replica DB.</li>
+    <li><strong>Order Service</strong> &mdash; orders, line items. REST + emits events on order state changes to Kafka.</li>
+    <li><strong>Payment Service</strong> &mdash; subscribes to <code>order.placed</code> events; charges via Stripe; publishes <code>payment.completed</code> or <code>payment.failed</code>.</li>
+  </ol>
+  <p>The <em>order saga</em>: Order Service creates an order in <code>PENDING</code>, publishes <code>order.placed</code>. Payment Service charges and publishes a result. Order Service consumes the result and either marks the order <code>PAID</code> or runs the compensation (cancel reservation, notify customer). No 2PC, no shared DB &mdash; consistency by message correlation + idempotent handlers.</p>
+  <p>Deployment: each service is a container in ECS / EKS; talks to others via service discovery (AWS Cloud Map / k8s service); shared infra (Kafka MSK, Redis Elasticache) provisioned by Terraform modules; observability via OpenTelemetry → CloudWatch / Grafana; alerts on lag in Kafka consumer offsets and on Saga compensations / second.</p>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP — anti-patterns</span>
+  <ul>
+    <li><strong>Distributed monolith</strong> &mdash; many services, all must be deployed together. Worst of both worlds.</li>
+    <li><strong>Shared database between microservices</strong> &mdash; couples them via the schema. Every service should own its data.</li>
+    <li><strong>Chatty interfaces</strong> &mdash; one user action triggers 50 hops between services. Use aggregation (BFF, API Gateway) or coarser-grained APIs.</li>
+    <li><strong>Synchronous fan-out</strong> &mdash; A calls B calls C calls D synchronously. The latency adds; reliability multiplies (in the wrong direction).</li>
+  </ul>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=BO761Fj6HH8" target="_blank">Microservices &mdash; Sam Newman, the canonical talk</a></li>
+    <li><a href="https://www.youtube.com/watch?v=uvb00oaa3k8" target="_blank">Apache Kafka in 6 minutes &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=BgLTDT03QtU" target="_blank">CAP theorem in 5 minutes (ByteByteGo)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=l4WxSCMHrL0" target="_blank">REST vs GraphQL vs gRPC &mdash; ByteByteGo</a></li>
+    <li><a href="https://www.youtube.com/watch?v=B5NULPSiOGw" target="_blank">8 fallacies of distributed computing &mdash; Codingo</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Source for FROM REPO blocks: <a href="../7_distribuovane_systemy.md">7_distribuovane_systemy.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

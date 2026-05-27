@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q4 Computer Networks — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 4 &middot; <span class="course-code">PA159</span> <span class="course-code">PA191</span></div>
+  <h1>Computer Networks</h1>
+  <p class="q-text">
+    Concepts, principles, architectures. ISO/OSI and TCP/IP model, IP protocol, transport protocols (TCP, UDP).
+    Network layer protocols, IPv4 features, advanced IPv6 features.
+    Peer-to-peer (P2P) networks, ad-hoc/sensor networks, high-speed networks, computer networks and multimedia.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary source: <code>6_pocitacove_site.md</code></div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Concepts &amp; principles</li>
+  <li>Architectures (C-S, P2P)</li>
+  <li>ISO/OSI 7 layers</li>
+  <li>TCP/IP 4 layers</li>
+  <li>IP protocol</li>
+  <li>TCP, UDP</li>
+  <li>Routing protocols</li>
+  <li>IPv4 features</li>
+  <li>IPv6 advanced features</li>
+  <li>P2P networks</li>
+  <li>Ad-hoc / sensor networks</li>
+  <li>High-speed networks</li>
+  <li>Multimedia</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Concepts, principles, architectures</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <blockquote>A computer network is a group of computers and devices connected by communication channels, enabling user communication and resource sharing (information, files, data, SW, HW).</blockquote>
+  <p>An <strong>ideal network</strong> is transparent (the user doesn't notice they're communicating through a network), with unlimited bandwidth, lossless, no latency, preserving packet order. In reality networks have all these problems and limitations.</p>
+  <p>Basic network types:</p>
+  <ul>
+    <li><strong>Connection-oriented</strong> &mdash; capacity is allocated/reserved for a communication and not used by anyone else (e.g. old wired telephone). QoS is easy to guarantee; in QoS terminology this is <em>integrated services</em>.</li>
+    <li><strong>Connection-less (packet-switched)</strong> &mdash; capacity is shared by all communicating parties; messages are split and wrapped into packets. QoS is hard (e.g. the Internet). In QoS terms: <em>differentiated services</em>.</li>
+  </ul>
+  <p>To unify rules and means of communication, we use standardised <strong>protocols</strong>.</p>
+  <p>Architectures: <a href="#p2p">peer-to-peer</a> vs client&ndash;server (clients only talk to the server; service discovery is via client config; client initiates the connection).</p>
+  <p>Routing happens via routers' routing tables: based on a packet's address (and possibly type), the table determines the next hop &mdash; <em>hop-by-hop</em> principle. The next destination is determined by the <strong>longest matching CIDR prefix</strong>. Routing tables are usually updated by distributed algorithms. Routers can also filter (stray packets, to enforce QoS) and possibly classify (for pay-as-you-go models). Routing is not always by shortest path &mdash; it can consider current load/state.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>ISO/OSI and TCP/IP models</h2>
+
+<h3>ISO/OSI</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Seven layers; each layer responsible for specific functionality; a layer only talks to its neighbours; each layer is an abstraction.</p>
+  <ol>
+    <li><strong>Physical</strong> &mdash; wire, bits, signals&hellip;</li>
+    <li><strong>Data link</strong> &mdash; physical addressing (MAC).</li>
+    <li><strong>Network</strong> &mdash; logical addressing within the network; routing.</li>
+    <li><strong>Transport</strong> &mdash; communication between processes.</li>
+    <li><strong>Session</strong> &mdash; user sessions.</li>
+    <li><strong>Presentation</strong> &mdash; data representation.</li>
+    <li><strong>Application</strong> &mdash; the network application.</li>
+  </ol>
+  <p>In practice TCP/IP, which collapses some OSI layers, became the de-facto standard.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — mnemonic</span>
+  <p>Bottom-up: <strong>P</strong>lease <strong>D</strong>o <strong>N</strong>ot <strong>T</strong>hrow <strong>S</strong>ausage <strong>P</strong>izza <strong>A</strong>way (Physical, Data link, Network, Transport, Session, Presentation, Application).</p>
+  <p>Top-down: <strong>A</strong>ll <strong>P</strong>eople <strong>S</strong>eem <strong>T</strong>o <strong>N</strong>eed <strong>D</strong>ata <strong>P</strong>rocessing.</p>
+  <p>Each layer adds a <em>header</em> to data going down (encapsulation) and removes it going up (decapsulation). The mental model: each layer talks to its <em>peer</em> on the other side, oblivious to the layers underneath.</p>
+</div>
+
+<h3>TCP/IP</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Four layers:</p>
+
+  <h4>Application</h4>
+  <ul>
+    <li>Provides services to users (web, mail&hellip;).</li>
+    <li>Uses application protocols (HTTP, SMTP, DNS, FTP&hellip;) which are part of applications; each defines syntax, semantics, message types and exchange rules.</li>
+    <li>Distinctions:
+      <ul>
+        <li>peer-to-peer vs client&ndash;server</li>
+        <li>pull (client initiates) vs push (server initiates)</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4>Transport — TCP, UDP</h4>
+  <ul>
+    <li>Takes <em>data</em>, transforms it into <em>segments</em>.</li>
+    <li>Delivers segments to the target application; communication between processes.</li>
+    <li>Addressing via <strong>port</strong> (16-bit, 0&ndash;65535).</li>
+    <li>May provide end-to-end reliability, connection (segments numbered, order matters, delivery acknowledged).</li>
+    <li>May provide connection control, QoS.</li>
+    <li>Logical communication channel; illusion of direct communication.</li>
+  </ul>
+
+  <h4>Network (internet) layer</h4>
+  <ul>
+    <li>IP (Internet Protocol).</li>
+    <li>Takes <em>segments</em>, transforms them into <em>packets</em> (= datagrams).</li>
+    <li>Transports packets between communicating nodes (across different LANs) &mdash; effectively forming a WAN.</li>
+    <li>Addresses every device on the Internet via IP (IPv4 32 bits, IPv6 128 bits).</li>
+    <li>Routes packets &mdash; depends on network load and topology.
+      <ul>
+        <li>Internet topology is hard to determine and changes dynamically.</li>
+        <li>Each router handles delivery to its nearest neighbours, trying to bring the packet closer to the (presumed) destination, based on its <strong>routing table</strong>.</li>
+        <li>Routing tables maintained manually (small nets) or automatically via distributed algorithms (more below).</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4>Network access (network interface) layer</h4>
+  <p>Often split into:</p>
+  <ul>
+    <li><strong>Data-link</strong>
+      <ul>
+        <li>Takes <em>packets</em>, transforms them into <em>frames</em> with source/destination addresses (so devices know who's on the medium).</li>
+        <li>Provides addressing via physical/MAC addresses.</li>
+        <li>Ensures reliability of the physical layer (error detection &amp; possible correction via redundancy: parity bit, Hamming code).</li>
+        <li>Flow control.</li>
+        <li>Coordinates access of multiple devices to a shared medium (channels, reservations, randomness, &hellip;) &mdash; the MAC protocol.</li>
+        <li>Networks can be connected at this layer into topologies (bus, star, ring).</li>
+      </ul>
+    </li>
+    <li><strong>Physical</strong>
+      <ul>
+        <li>Interface as <em>frames of bits</em>.</li>
+        <li>Provides access to the transmission medium.</li>
+        <li>Internally transforms bits into signals; provides synchronization, multiplexing (combining several signals/data streams into one on a shared medium &mdash; time/frequency/wavelength-division multiplexing), demultiplexing&hellip;</li>
+        <li>Medium: wired/optical cable, air (radio/IR signals&hellip;).</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — side-by-side</span>
+  <div class="diagram">
+ISO/OSI            TCP/IP             Example protocols / units
+─────────────────  ─────────────────  ─────────────────────────
+7. Application     ┐
+6. Presentation    │ Application      HTTP, SMTP, DNS, FTP, TLS*
+5. Session         ┘                  (data)
+
+4. Transport       Transport          TCP, UDP            (segment / datagram)
+
+3. Network         Internet           IP, ICMP            (packet / datagram)
+
+2. Data link       ┐                  Ethernet, 802.11
+1. Physical        ┘ Network access   Ethernet PHY, Wi-Fi (frame, bits)
+  </div>
+  <p>* TLS sits between transport and application; some textbooks place it at layer 5/6.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>IP protocol</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Ensures delivery of IP datagrams (data sliced into pieces with an envelope) across the Internet, host-to-host (also through intermediaries, i.e. routers); the network is connection-less, packet-switched.</li>
+    <li><strong>Best-effort</strong> service; no delivery guarantee.</li>
+  </ul>
+  <p>More in the IPv4 and IPv6 sections below.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Transport protocols — UDP, TCP</h2>
+
+<h3>UDP — User Datagram Protocol</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Simple; connectionless, best-effort (the app handles reliability if needed).</li>
+    <li>Key feature: simplicity ⇒ minimal overhead, speed.</li>
+    <li>Used for simple request-reply (DNS), real-time transmission (livestream), multicast.</li>
+  </ul>
+  <p>Header contains: source port, destination port, total length, checksum.</p>
+</div>
+
+<h3>TCP — Transmission Control Protocol</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Reliable, connection-oriented service; preserves order.</li>
+    <li>Works with byte streams.</li>
+    <li>Connection must be established &mdash; <strong>3-way handshake</strong> (SYN, SYN+ACK, ACK).</li>
+    <li>Communication is end-to-end recognisable only; routers don't see it as a connection.</li>
+    <li>No multicast.</li>
+  </ul>
+  <p>Header contains: source port, destination port, sequence number (within the stream), ACK number (next expected byte; acknowledges receipt), header length, flags (ACK, RST, FIN&hellip;), window size (for flow control), checksum, options.</p>
+  <p>TCP varies the data sent over the course of a connection so the receiver (<strong>Flow Control</strong>) or the network (<strong>Congestion Control</strong>) isn't overwhelmed. The mechanism: <strong>window size</strong>.</p>
+  <ul>
+    <li><strong>Flow Control</strong> &mdash; the receiver, in its ACK, sends how much room remains in its buffer (e.g. 500 bytes), so the sender knows it can't send more. When the receiver's buffer is full, it advertises window size 0; the sender waits for the next ACK indicating space.</li>
+    <li><strong>Congestion Control</strong> &mdash; at start, the window grows <em>exponentially</em> until a threshold; then <em>linearly</em> until a packet is lost. On loss, drop to the threshold and continue linearly. Variants differ: Tahoe drops to minimum window after loss; Reno follows the described scheme.</li>
+    <li>The actual cap is the minimum of these two windows.</li>
+  </ul>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — TCP vs UDP</span>
+  <p>TCP is a phone call: dial, confirm, talk in order, ensure everything was heard, hang up. UDP is a postcard: write, drop in mailbox, hope it arrives, never know.</p>
+  <p>Use TCP when correctness matters more than latency (HTTP, file transfer, SQL). Use UDP when latency matters more than completeness (video calls, games, DNS, NTP).</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — TCP 3-way handshake (and 4-way close)</span>
+  <div class="diagram">
+Open (3-way)                       Close (4-way)
+─────────────                       ─────────────
+A                  B                 A                  B
+│  ─── SYN seq=x ─→ │                │  ── FIN ───────→  │
+│  ← SYN seq=y,ack=x+1               │  ← ACK ────────  │
+│  ── ACK ack=y+1 → │                │  ← FIN ────────  │
+│                  │                 │  ── ACK ───────→  │
+│  ── data ──────→ │                 │                  │
+  </div>
+  <p>TCP also has a "fast open" variant (TFO) that piggybacks data on the SYN. <strong>QUIC</strong> (HTTP/3) replaces TCP+TLS with a UDP-based protocol that reduces handshake round-trips and avoids head-of-line blocking.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Routing protocols</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Routing tables are maintained manually (small nets) or automatically via distributed algorithms.</p>
+  <dl class="def-list">
+    <dt>Distance Vector</dt>
+    <dd>
+      "<em>I tell my neighbours everything I know.</em>" Protocol: <strong>RIP</strong>. Neighbouring routers periodically (or on change) exchange routing tables containing hop distances to various destinations (the distance vector). Principle: <a href="https://www.youtube.com/watch?v=obWXjtg0L64">Bellman-Ford</a>. Used for small networks without redundancy. Variants: IGRP, EIGRP.
+    </dd>
+    <dt>Link State</dt>
+    <dd>
+      "<em>I tell everyone about my neighbours.</em>" Routers exchange neighbour-state info; the full network topology is kept; each router computes its own routing table. Routes use <a href="https://www.youtube.com/watch?v=_lHSawdgXpI">Dijkstra</a>. Protocol: <strong>OSPF</strong> (Open Shortest Path First). Metric is cost derived from bandwidth; lower is better. More robust (each computes its own table). Used for large networks. Variant: IS-IS.
+    </dd>
+    <dt>Path Vector</dt>
+    <dd>
+      Distance vector but instead of just costs, full path descriptions are exchanged. Protocol: <strong>BGP (Border Gateway Protocol)</strong>; allows routing policies; uses CIDR for routing efficiency. Used for routing between autonomous systems.
+    </dd>
+  </dl>
+  <p>You can use interior routing (RIP, OSPF) within your domain (autonomous system) and exterior routing (EGP, BGP-4) between domains.</p>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP</span>
+  <p>Examiners love asking <em>"give me an example protocol for distance vector / link state / path vector."</em> Memorise: <strong>RIP → DV, OSPF → LS, BGP → PV</strong>. Acronym for protocol families: <strong>RIP</strong> for small interior nets, <strong>OSPF</strong> for big interior, <strong>BGP</strong> between providers.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>IPv4 features</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>Protocol enabling host-to-host communication.</p>
+  <ul>
+    <li>32 bits, <code>0.0.0.0</code>&ndash;<code>255.255.255.255</code>.</li>
+    <li>Address types:
+      <ul>
+        <li><strong>Unicast</strong> &mdash; 1-to-1.</li>
+        <li><strong>Broadcast</strong> &mdash; to all on LAN.</li>
+        <li><strong>Multicast</strong> &mdash; to those subscribed to a multicast address.</li>
+      </ul>
+    </li>
+  </ul>
+  <p>Header contains:</p>
+  <ul>
+    <li>Version</li>
+    <li>Header length</li>
+    <li>Type of service (for QoS)</li>
+    <li>Total datagram length</li>
+    <li>Identification, flags, offset (used for fragmentation when transport tech can't carry the size)</li>
+    <li>TTL (decremented every hop; dropped at 0; eliminates stray packets)</li>
+    <li>Protocol &mdash; specifies the higher-layer protocol (ICMP, IGMP, TCP, UDP, OSPF&hellip;)</li>
+    <li>Header checksum (not the body; recalculation would be expensive; recomputed each hop due to TTL change)</li>
+    <li>Source &amp; destination address</li>
+    <li>Options &mdash; for testing/debugging; optional (header length field allows this)</li>
+  </ul>
+  <p>IPv4 in general:</p>
+  <ul>
+    <li>Works with:
+      <ul>
+        <li><strong>ICMP</strong> &mdash; network status info (e.g. echo request/reply); reports delivery errors to sender (unreachable, TTL exceeded).</li>
+        <li><strong>IGMP</strong> &mdash; multicast group management; (un)subscribe.</li>
+        <li><strong>ARP, RARP</strong> &mdash; translate IP to MAC and back.</li>
+      </ul>
+    </li>
+    <li>Allows multicast.</li>
+  </ul>
+  <p>Originally IPv4 addresses were split into <strong>classes</strong>:</p>
+  <figure><img src="../img/20230530162603.png" alt="IPv4 class diagram"></figure>
+  <p>Due to address exhaustion, network masks (<strong>CIDR</strong>) began to be used.</p>
+  <p><code>127.0.0.1</code> is loopback.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — reserved &amp; special IPv4 ranges</span>
+  <table>
+    <thead><tr><th>Range</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td><code>10.0.0.0/8</code></td><td>Private (RFC 1918)</td></tr>
+      <tr><td><code>172.16.0.0/12</code></td><td>Private (RFC 1918)</td></tr>
+      <tr><td><code>192.168.0.0/16</code></td><td>Private (RFC 1918) &mdash; home routers</td></tr>
+      <tr><td><code>127.0.0.0/8</code></td><td>Loopback</td></tr>
+      <tr><td><code>169.254.0.0/16</code></td><td>Link-local (APIPA); the AWS instance metadata endpoint <code>169.254.169.254</code> lives here</td></tr>
+      <tr><td><code>224.0.0.0/4</code></td><td>Multicast</td></tr>
+      <tr><td><code>0.0.0.0/0</code></td><td>"Any" / default route</td></tr>
+    </tbody>
+  </table>
+  <p>VPC CIDR in AWS is your private range; typical practice is <code>10.x.x.x/16</code> per VPC, subnetted by AZ.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Advanced IPv6 features</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Solves IPv4 exhaustion with 128-bit length.</li>
+    <li><code>0000:0000:0000:0000:0000:0000:0000:0000</code> &ndash; <code>FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF</code>.</li>
+    <li>Shortcuts:
+      <ul>
+        <li>Drop leading zeros: <code>1050:0000:0000:0000:0005:0600:300c:326b</code> ⇒ <code>1050:0:0:0:5:600:300c:326b</code>.</li>
+        <li>Drop at most one sequence of zeros: <code>1050::5:600:300c:326b</code>.</li>
+      </ul>
+    </li>
+    <li>vs IPv4:
+      <ul>
+        <li>IPSec is mandatory.</li>
+        <li>Longer address ⇒ more devices.</li>
+        <li>Simpler header (no checksum, options, fragmentation) with optional <em>extension headers</em>.</li>
+        <li>Flow labeling and priorities.</li>
+        <li>Security, encryption, authentication, integrity built-in.</li>
+        <li><strong>Mobility</strong> &mdash; every device is "at home" somewhere with a <em>Home Agent</em>. Away from home, the device tells the Home Agent its foreign address; the Home Agent forwards messages or sets up a direct tunnel.</li>
+        <li>Device auto-configuration.</li>
+        <li>Has <strong>anycast</strong> &mdash; like multicast but delivery to just one member suffices.</li>
+        <li>Fragmentation during delivery is removed &mdash; the sender must handle it. If too large, the datagram is dropped and an ICMP message indicates max link size (the <strong>Path MTU Discovery</strong> process &mdash; send, get ICMP, fragment, retry).</li>
+        <li>Checksum removed (handled at lower/higher layer).</li>
+        <li>Broadcast replaced by specific multicast groups (e.g. all-routers on LAN).</li>
+      </ul>
+    </li>
+  </ul>
+  <p>Header (40 bytes):</p>
+  <ul>
+    <li>Version</li>
+    <li>Priority (and a field indicating if delay was observed along the way)</li>
+    <li>Flow label (packets of one flow must be processed the same; routing choice can be cached)</li>
+    <li>Data length</li>
+    <li>Next header &mdash; extension (auth, options&hellip;) or e.g. TCP header for data</li>
+    <li>Hop limit</li>
+    <li>Source/destination addresses</li>
+  </ul>
+  <p><strong>ICMPv6</strong> extends ICMP's role to also cover what IGMP and ARP did.</p>
+  <ul>
+    <li>The original ARP is replaced by <strong>Neighbour Discovery Protocol</strong> (NDP), which handles:
+      <ul>
+        <li>IPv6 address autoconfiguration (no DHCP needed) based on network prefix (from routers) + MAC/locally unique ID.</li>
+        <li>Address collision detection (send to self; if reply, duplicate).</li>
+        <li>Determining MAC addresses on the same link; change tracking.</li>
+        <li>Determining neighbours that can forward.</li>
+        <li>Reachability monitoring.</li>
+        <li>Achieved via multicast groups.</li>
+      </ul>
+    </li>
+  </ul>
+  <p>(Sub-)nets defined via CIDR notation (all in the net share the same prefix).</p>
+  <h4>Transition from IPv4 to IPv6</h4>
+  <ul>
+    <li>Legacy systems must be updated.</li>
+    <li>More complex IPv6 processing.</li>
+    <li>The ideal today is dual-stack applications; alternatively use encapsulation (tunneling IPv6 in IPv4) or NAT.</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — IPv6 address types</span>
+  <table>
+    <thead><tr><th>Prefix</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td><code>fe80::/10</code></td><td>Link-local (auto-assigned per interface)</td></tr>
+      <tr><td><code>fc00::/7</code></td><td>Unique local (private — RFC 4193)</td></tr>
+      <tr><td><code>2000::/3</code></td><td>Global unicast (routable on the Internet)</td></tr>
+      <tr><td><code>ff00::/8</code></td><td>Multicast</td></tr>
+      <tr><td><code>::1/128</code></td><td>Loopback</td></tr>
+      <tr><td><code>::/128</code></td><td>Unspecified</td></tr>
+    </tbody>
+  </table>
+  <p>No broadcast in IPv6 &mdash; replaced by <code>ff02::1</code> "all-nodes" multicast.</p>
+</div>
+
+<!-- ============================================ -->
+<h2 id="p2p">Peer-to-peer (P2P) networks</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>A system is built from many identical (and equal-level) modules &mdash; <em>peers</em> &mdash; that communicate with each other. Each peer acts as both client (sends requests) and server (responds) at the same time. In P2P you don't need to know the full network topology.</p>
+  <p>vs Client&ndash;Server:</p>
+  <ul>
+    <li>Better scalability (though C-S with load balancing does fine too) &mdash; capacity grows with users.</li>
+    <li>Decentralisation &mdash; good for availability (one peer failing doesn't kill the system).
+      <ul><li>Can be a data-consistency problem.</li></ul>
+    </li>
+    <li>More volatile topology.</li>
+    <li>Compute capacity sharing.</li>
+    <li>Self-organisation.</li>
+    <li>C-S is simpler / more established / easier to manage.</li>
+    <li>In C-S the server is a clear authority for security and data authenticity; harder to ensure in P2P.</li>
+  </ul>
+  <p>Examples:</p>
+  <ul>
+    <li>Distributed computing: Folding@Home</li>
+    <li>File sharing: BitTorrent</li>
+    <li>Apache Cassandra (DB)</li>
+    <li>Blockchain (public: cryptocurrencies; private: e.g. Hyperledger)</li>
+  </ul>
+  <p>Layers:</p>
+  <ul>
+    <li><strong>Application</strong></li>
+    <li><strong>Middleware</strong> &mdash; abstracts the overlay, provides access to peer services/resources, access control, locating &amp; maintaining service resource peers.</li>
+    <li><strong>Base overlay</strong> &mdash; layer atop the physical network (usually TCP/UDP) where peers are treated as hops (physically distant peers may be P2P neighbours and vice versa); peer discovery, message forwarding, network maintenance.</li>
+  </ul>
+  <p>Peer discovery:</p>
+  <ul>
+    <li><strong>Static / manual</strong> &mdash; a preconfigured list of possible peers (IP, port) to try; not suited to dynamic systems; for big systems limit to a few long-running stable peers.</li>
+    <li><strong>Centralised registry of peers</strong> &mdash; maintains a list of active peers; communication continues directly after discovery. The registry is effectively a server, a single point of failure. Healthcheck-aware (peers can crash silently; on-shutdown deregistration isn't enough).</li>
+  </ul>
+  <p>Service discovery via flooding queries (unstructured nets; each peer answers for its data/services; TTL to prevent overload; can use DFS/BFS/IDS/heuristics/random walks based on most-promising&hellip;), or a registry (structured nets; central registry, distributed hash tables, skip lists&hellip;), or selected peers as registries (hybrid nets).</p>
+  <p>The overlay topology (how peers are interconnected) determines the P2P network's overall performance. We avoid linear formations, splits.</p>
+  <ul>
+    <li><strong>Random mesh</strong> &mdash; after discovery, connect to several peers (chosen by latency &mdash; favours physically close ones).</li>
+    <li><strong>Layers</strong> &mdash; peers organize into layers by services/connections; the top layer has the most reliable peers with forwarding capacity; on each layer a peer connects to several peers in adjacent layers and forwards to/from. Tree-like; ensure one failure can't split the net. Useful for video streaming &mdash; a peer can duplicate a downward-bound message and save bandwidth higher up.</li>
+    <li><strong>Mesh / Grid</strong> &mdash; peers in a grid (possibly multi-dimensional; edges can interconnect). Adding/removing peers can be a problem; rows/columns may differ in length. Peer coordinates can encode the services they offer.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Ad-hoc / sensor networks</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Radio networks in general</span>
+  <ul>
+    <li>Distributed control over a shared medium.</li>
+    <li>May need to handle eavesdropping.</li>
+    <li>Potentially high error rate, collisions&hellip; ⇒ use connection-oriented protocols which may have reservation/scheduling mechanisms for QoS.</li>
+    <li>Transmission signalling (to prevent collisions) needs a separate channel, or must happen before the transmission.</li>
+    <li>Absence of interference at the sender doesn't necessarily mean absence at the receiver.</li>
+  </ul>
+</div>
+
+<h3>Ad-hoc</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <ul>
+    <li>Networks working without prior existing infrastructure, using the network capabilities of individuals ⇒ distributed.</li>
+    <li>Each participant also acts as a host.</li>
+    <li>Unlike P2P:
+      <ul>
+        <li>Far greater topology dynamism, participant mobility.</li>
+        <li>Participants are themselves responsible for access to the transmission medium (often air &rarr; possibly high error rate, interference).</li>
+      </ul>
+      ⇒ specialised protocols are needed.
+    </li>
+  </ul>
+  <p>Examples:</p>
+  <ul>
+    <li>Communication between autonomous cars.</li>
+    <li>Creating a communication infrastructure in emergency/rescue situations.</li>
+    <li>Tracker tags using the network capabilities of mobile phones could count as mini-ad-hoc.</li>
+  </ul>
+  <p>Routing can be:</p>
+  <ul>
+    <li><strong>Address-based</strong> &mdash; each participant must have a unique address; the problem is finding them in the network. Advantage: supports uni/multi/broadcast.</li>
+    <li><strong>Data-centric</strong> &mdash; messages don't carry a destination address but a data identifier. Recipients announce interest in data; matching data is forwarded. No need for unique addresses.</li>
+  </ul>
+  <p>Routing further:</p>
+  <ul>
+    <li>Proactive (periodic exchange of state, topology info kept) vs reactive (flooding needed); depends on desired speed, load, energy needs&hellip;</li>
+    <li>Hop-by-hop vs full topology knowledge.</li>
+    <li>Flat vs hierarchical (superiors may have added responsibilities, use specialised algorithms&hellip;).</li>
+  </ul>
+</div>
+
+<h3>Sensor networks</h3>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p>End devices typically contain:</p>
+  <ul>
+    <li>Processor and memory.</li>
+    <li>Communication module (radio).</li>
+    <li>Battery (possibly with energy-harvesting HW, e.g. solar).</li>
+    <li>The sensor itself (light, motion&hellip;).</li>
+  </ul>
+  <p>Specifics:</p>
+  <ul>
+    <li>Emphasis on <strong>energy efficiency</strong> &mdash; battery is small, energy intake limited (shared with ad-hoc).</li>
+    <li>Limited compute/memory capacity.</li>
+    <li>Limited bandwidth.</li>
+    <li>Possible unreliability.</li>
+    <li>Need to solve unique addressing (typically not built in).</li>
+    <li>Possible emphasis on self-organisation, multi-hop within the network.</li>
+    <li>Temporary device sleeping when no activity, to save energy.</li>
+  </ul>
+  <p>Examples:</p>
+  <ul>
+    <li>Tracking natural phenomena, behaviour/movement of (endangered) animals.</li>
+    <li>Fire, earthquake, wave detection.</li>
+    <li>Agricultural automation; drought, pest detection&hellip;</li>
+    <li>Traffic management.</li>
+    <li>Building HVAC automation.</li>
+    <li>Air-quality measurement.</li>
+    <li>Object security.</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — high-speed networks (the missing subtopic)</span>
+  <p>The repo doesn't have a dedicated section, but the question mentions <em>high-speed networks</em>. Briefly:</p>
+  <ul>
+    <li><strong>Gigabit / 10 / 40 / 100 / 400 GbE</strong> &mdash; Ethernet's ladder; 400 GbE is mainstream in data centres.</li>
+    <li><strong>InfiniBand</strong> &mdash; lower-latency than Ethernet; common in HPC clusters.</li>
+    <li><strong>Optical networks</strong> &mdash; DWDM (Dense Wavelength Division Multiplexing) puts many wavelengths on one fibre; backbone of the Internet.</li>
+    <li><strong>5G</strong> &mdash; not just faster mobile; supports low-latency slices for IoT and vehicle networks.</li>
+    <li><strong>RDMA / RoCE</strong> &mdash; Remote Direct Memory Access over Ethernet; CPU-bypass data transfer used in DBs and ML training clusters.</li>
+    <li><strong>QUIC / HTTP/3</strong> &mdash; transport-level high-speed for the public Internet; multi-stream, 0-RTT handshake when resuming.</li>
+  </ul>
+  <p>The recurring theme: <strong>reduce per-byte overhead</strong> (hardware offload, kernel bypass, fewer round-trips) and <strong>parallelise</strong> (many wavelengths, many streams).</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Computer networks &amp; multimedia</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <p><strong>Multimedia</strong> = data composed of different media (text, sound, video, images) integrated together &mdash; e.g. videoconferencing (video + sound), TV/stream (video + sound + text/subtitles). Some media are analog and need conversion. Compression is desirable to reduce volume, but adds overhead unacceptable in some real-time transmissions. Depending on the application, errors may or may not matter.</p>
+  <h4>Delay</h4>
+  <p>Time to transmit from source to destination (humans notice latency &gt; 100&ndash;200 ms).</p>
+  <ul>
+    <li><strong>Processing delay</strong> &mdash; sender/receiver overhead; depends on system speed/load.</li>
+    <li><strong>Transmission delay</strong> &mdash; time to push all bits into the medium (depends on size).</li>
+    <li><strong>Propagation delay</strong> &mdash; medium traversal time; tech + distance.</li>
+    <li><strong>Routing / queuing delay</strong> &mdash; network load &amp; routing speed.</li>
+  </ul>
+  <p><strong>Jitter</strong> &mdash; variation in delay across packets.</p>
+  <p>For minimal overhead and max speed (at the cost of errors and outages) real-time apps use UDP; receivers can estimate missing data; senders can use error-detection/correction via redundancy (or retransmission).</p>
+  <p><strong>Interleaving</strong> &mdash; e.g. video: shuffle adjacent frames so they aren't neighbours. A dropped packet affects more parts but only slightly, instead of a noticeable failure in one part. Adds latency.</p>
+  <p>For real-time transmissions use <strong>multicast</strong> instead of many unicasts (less congestion). If the network doesn't support multicast, deploy a <strong>reflector</strong> &mdash; the sender sends one stream; the reflector replicates to each recipient via unicast.</p>
+  <p>Media can be transmitted discretely (file, message) or continuously (stream).</p>
+  <ul>
+    <li><strong>Text</strong> &mdash; HTTP, SMTP, FTP; relatively low bandwidth; delay and error tolerance depend on app. Compression via Huffman / Shannon-Fano (more in <a href="03-databases.html">Q3 Databases</a>); GZIP (contains Huffman) on the web; small errors are problematic.</li>
+    <li><strong>Audio</strong> &mdash; basically analog; digitization via sampling (value over time) and quantization (mapping to e.g. integers). Bandwidth depends on quality and compression; small errors tolerable.</li>
+    <li><strong>Graphics</strong> &mdash; usually no speed requirements (unless tragic).</li>
+    <li><strong>Video</strong> &mdash; usually bandwidth-hungry; otherwise like audio.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Notes from the repo</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO</span>
+  <dl class="def-list">
+    <dt>Protocol</dt>
+    <dd>A set of syntactic (what messages look like) and semantic (what messages mean) rules for communication between systems/devices/communicators.</dd>
+
+    <dt>CIDR</dt>
+    <dd>Besides the IP we keep a netmask (e.g. <code>147.209.5.0/24</code> says only the first 24 bits are relevant). Allows subnetting and more efficient routing &mdash; if many addresses share a prefix and route, we can say "the prefix goes our way."</dd>
+
+    <dt>Piggybacking</dt>
+    <dd>If we want to send data <em>and</em> acknowledge receipt at the same time, combine both into one packet.</dd>
+
+    <dt>NAT</dt>
+    <dd>Address translation at the network interface. E.g. one public IP for a whole network; for proper routing back, the interface translates between public and internal addresses.</dd>
+
+    <dt>SSL, TLS</dt>
+    <dd>Cryptographic protocols (TLS replaces SSL) between transport and application; ensure authenticity and encryption of data between communicators. First, parties agree on supported algorithms; then symmetric-key exchange happens via asymmetric cryptography (server cert; client cert may be required). After that, symmetric encryption is used for communication.</dd>
+
+    <dt>Multiprotocol Label Switching (MPLS)</dt>
+    <dd>For expected/known flows, define paths; assign labels; route by label only (faster; multiple paths possible for backup or load balancing).</dd>
+
+    <dt>Flow control vs congestion control</dt>
+    <dd><strong>Flow control</strong> is for the receiver; <strong>congestion control</strong> is for the network.</dd>
+
+    <dt>Authenticity</dt>
+    <dd>Data is from the correct sender.</dd>
+
+    <dt>Integrity</dt>
+    <dd>Data wasn't changed in transit.</dd>
+
+    <dt>Encryption</dt>
+    <dd>Data isn't readable/understandable to third parties.</dd>
+  </dl>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical examples</h2>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — what happens when you type <code>https://example.com</code> in a browser</span>
+  <ol>
+    <li><strong>DNS</strong> (UDP/TCP port 53) resolves <code>example.com</code> &rarr; IP.</li>
+    <li><strong>TCP 3-way handshake</strong> to that IP, port 443.</li>
+    <li><strong>TLS handshake</strong> negotiates ciphers, exchanges certs, derives a symmetric key.</li>
+    <li><strong>HTTP GET</strong> goes over the encrypted TCP stream.</li>
+    <li>Server replies with the HTML; browser parses, fires more requests (CSS, JS, images) often multiplexed on HTTP/2 over one TCP connection (or HTTP/3 over QUIC over UDP).</li>
+  </ol>
+  <p>Where each layer lives in this:</p>
+  <ul>
+    <li>Application: HTTP, TLS, DNS</li>
+    <li>Transport: TCP (or UDP/QUIC for HTTP/3)</li>
+    <li>Network: IP routing &mdash; many hops via BGP-driven decisions between ISPs</li>
+    <li>Data link / Physical: Ethernet or Wi-Fi at each hop</li>
+  </ul>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=7_LPdttKXPc" target="_blank">OSI vs TCP/IP &mdash; ByteByteGo (5 min)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=AEaKrq3SpW8" target="_blank">How DNS works &mdash; Computerphile</a></li>
+    <li><a href="https://www.youtube.com/watch?v=qqRYkcta6IE" target="_blank">TCP vs UDP &mdash; PowerCert (8 min)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=8Kg7DZASNoQ" target="_blank">IPv6 in 100 seconds &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=AlkGbglPPcs" target="_blank">QUIC/HTTP3 explained &mdash; Asim Hussain</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Source for FROM REPO blocks: <a href="../6_pocitacove_site.md">6_pocitacove_site.md</a>. Translated to English. All <span class="tag added">ADDED</span> blocks are mine.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

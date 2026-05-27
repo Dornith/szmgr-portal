@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q9 Operating Systems — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 9 &middot; <span class="course-code">PV065</span> <span class="course-code">PV077</span> <span class="course-code">PV175</span></div>
+  <h1>Operating Systems</h1>
+  <p class="q-text">
+    UNIX operating system, kernel operation, memory and device management by the kernel.
+    Basic configuration, user management, network services.
+    Principles of development and development environment in UNIX, working with processes, files, input/output operations.
+    MS Windows operating system, basic configuration, user management, NTFS file system, HW devices and drivers, basic scripting.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary sources: <code>materialy/PV065</code> (Kasprzak — UNIX I: programming) + <code>materialy/PV077</code> (Kasprzak — UNIX II: administration) + <code>materialy/PV175/all.txt</code> (Windows course outline). Slides are in Czech; ported and translated.</div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>UNIX boot &amp; kernel</li>
+  <li>Kernel architecture</li>
+  <li>Memory management</li>
+  <li>Device management</li>
+  <li>Processes</li>
+  <li>Files &amp; I/O, descriptors</li>
+  <li>IPC, signals, pipes</li>
+  <li>Threads</li>
+  <li>Filesystem layout</li>
+  <li>init / systemd</li>
+  <li>Users &amp; groups</li>
+  <li>Network services (DNS, NFS, LDAP, Kerberos, mail)</li>
+  <li>Dev environment (C, POSIX)</li>
+  <li>Windows architecture</li>
+  <li>Windows user mgmt</li>
+  <li>NTFS</li>
+  <li>HW devices &amp; drivers</li>
+  <li>Scripting (PowerShell)</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Part A — UNIX</h2>
+
+<h3>Boot &amp; kernel start (PV065)</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Boot sequence (PV065 Ch.5)</span>
+  <ol>
+    <li><strong>Firmware</strong> &mdash; stored in ROM. On PC: BIOS. Tests hardware, loads the OS from external media, often provides a command line (PROM monitor), serial console.</li>
+    <li><strong>Primary bootloader</strong> &mdash; in the boot block of the disk; fixed length; loads the secondary bootloader. On PC: master boot record (incl. partition table).</li>
+    <li><strong>Secondary bootloader</strong> &mdash; loads the kernel and passes it parameters. Some provide a CLI; some can read filesystems (boot arbitrary file); uses firmware to load the kernel.</li>
+    <li><strong>UEFI</strong> &mdash; a tiny OS by itself: recognises partitions, has a filesystem (VFAT), executable format, EFI shell, EFI environment variables, secure boot. Linux: <code>grub.efi</code>, <code>linux.efi</code>.</li>
+    <li><strong>Kernel parameters</strong> &mdash; system console, root disk, device-driver parameters, other params passed to user space. <code>bootparam(7)</code>.</li>
+  </ol>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Kernel initialization (PV065 Ch.5)</span>
+  <ol>
+    <li>Virtual memory &mdash; as soon as possible.</li>
+    <li>Console init (sometimes two-phase: <code>early_printk()</code>).</li>
+    <li>CPU init.</li>
+    <li>Bus init (autoconfig devices).</li>
+    <li>Device init.</li>
+    <li>Create process 0 (idle task / swapper / scheduler).</li>
+    <li>Start kernel threads (kflushd, kswapd&hellip;).</li>
+    <li>Init the other CPUs and start their idle processes.</li>
+    <li>Mount the root filesystem.</li>
+    <li>Start process 1 — usually <code>/sbin/init</code>.</li>
+    <li>From here on: user space.</li>
+  </ol>
+  <h4>Initial RAM disk (initrd / initramfs)</h4>
+  <ul>
+    <li>Loaded into memory by the secondary bootloader together with the kernel.</li>
+    <li>The kernel doesn't have to contain any drivers other than for console + the FS that lives on the ramdisk.</li>
+    <li>Modules are linked in; the ramdisk gets unmounted later.</li>
+    <li>Then the boot continues by mounting the real root FS and starting <code>init</code>.</li>
+  </ul>
+  <p>Boot messages: <code>dmesg(8)</code>, also stored in <code>/var/log/dmesg</code> or <code>/var/log/boot.msg</code>.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Kernel architecture (PV065 Ch.5)</span>
+  <dl class="def-list">
+    <dt>Monolithic kernel</dt>
+    <dd>One file on disk. All used drivers live inside the kernel. Often no autodetection. Memory equally accessible to all kernel parts. One bad part (a buggy driver) can crash another. Classic Linux example.</dd>
+    <dt>Microkernel</dt>
+    <dd>"What doesn't have to be in the kernel goes outside." Processes (servers) for VM management, device control, disks, etc. Well-defined operating conditions (theoretically — in practice DMA, SMI, IOMMU complicate things). Message passing has lower throughput, higher latency. Examples: CMU Mach, OSF Mach, L4, Minix, Windows NT HAL, QNX, VxWorks. (Historical aside: "Linux is obsolete" — the 1992 Tanenbaum vs. Torvalds debate.)</dd>
+    <dt>Modular monolithic (Linux today)</dt>
+    <dd>Linux is monolithic but supports loadable kernel modules (<code>insmod</code>, <code>modprobe</code>) — best of both.</dd>
+  </dl>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — monolithic vs micro</span>
+  <p>Monolithic: one giant shared address space; functions calls between subsystems. Fast, but a bug anywhere can crash everything. Microkernel: kernel only handles IPC and scheduling; drivers and filesystems are <em>userspace servers</em>. Robust, but message passing is slower than a function call. Real-world OSes are hybrid (Linux = modular monolith; macOS XNU = monolithic on top of a Mach microkernel base; Windows NT is conceptually hybrid).</p>
+</div>
+
+<h3>Memory management</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Kernel memory model (PV065 Ch.5)</span>
+  <p>The kernel uses <strong>virtual memory</strong>, the same abstraction it provides to processes. Each process sees its own address space — text, data, BSS, heap, stack — backed by physical pages via the MMU's page tables and the TLB.</p>
+  <p>Course motto (Rik van Riel): <em>"Virtual memory is like a game you can't win; however, without VM there's truly nothing to lose."</em></p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — VM concepts the exam may probe</span>
+  <ul>
+    <li><strong>Paging</strong> &mdash; address space split into pages (typically 4 KB on x86). Each page maps to a physical frame or is on disk (swap).</li>
+    <li><strong>Page table</strong> &mdash; per-process structure storing the mapping. Multi-level (x86_64 uses 4 levels).</li>
+    <li><strong>TLB</strong> (Translation Lookaside Buffer) &mdash; cache of recent VA→PA translations.</li>
+    <li><strong>Page fault</strong> &mdash; CPU access to a page not in memory: the kernel maps it in (demand paging) or swaps it from disk.</li>
+    <li><strong>Copy-on-write</strong> &mdash; after <code>fork()</code>, parent &amp; child share physical pages; the first write triggers a copy. Makes fork+exec cheap.</li>
+    <li><strong>Memory-mapped files</strong> (<code>mmap</code>) &mdash; file pages mapped into a process's address space; read/write becomes a memory access. Powers shared memory between processes and large-file processing.</li>
+    <li><strong>ASLR</strong> (Address Space Layout Randomization) &mdash; security feature; randomizes positions of stack, heap, libraries to mitigate exploits.</li>
+    <li><strong>Swap</strong> &mdash; backing store on disk for pages evicted from RAM under pressure.</li>
+    <li><strong>OOM killer</strong> &mdash; when memory is exhausted Linux picks a process to kill based on a heuristic (<code>oom_score</code>).</li>
+  </ul>
+</div>
+
+<h3>Device management</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Devices (PV065 Ch.5)</span>
+  <ul>
+    <li>UNIX v7 &mdash; static block / character device tables (<code>bdevsw[]</code>, <code>cdevsw[]</code>).</li>
+    <li>Linux &mdash; block / character / SCSI / network devices, <em>dynamic</em> tables.</li>
+    <li>Device services &mdash; open, read, write, control operations, private device data.</li>
+    <li>Runtime reconfiguration &mdash; hot-plug / hot-unplug (USB etc.).</li>
+  </ul>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Linux device model</span>
+  <ul>
+    <li>Devices visible in <code>/dev</code> as <strong>block</strong> (random-access, e.g. <code>/dev/sda</code>) or <strong>character</strong> (sequential, e.g. <code>/dev/tty</code>).</li>
+    <li><strong>udev</strong> (in <code>/dev</code>) — userspace daemon that creates device nodes on hot-plug events; rules in <code>/etc/udev/rules.d</code>.</li>
+    <li><strong>sysfs</strong> &mdash; <code>/sys</code> exposes the kernel device tree as files.</li>
+    <li><strong>procfs</strong> &mdash; <code>/proc</code> exposes kernel and process info as files (<code>/proc/cpuinfo</code>, <code>/proc/[pid]/status</code>).</li>
+    <li>Driver = a kernel module that registers the device with the relevant subsystem (block, char, net, USB, PCI&hellip;).</li>
+  </ul>
+</div>
+
+<h3>Processes</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Processes (PV065 Ch.6)</span>
+  <p>A process has:</p>
+  <ul>
+    <li><strong>Memory image</strong> &mdash; text, data, BSS, heap, stack.</li>
+    <li><strong>PID</strong> &mdash; process identifier.</li>
+    <li><strong>UID / GID</strong> &mdash; real, effective, saved (set-uid/set-gid programs use these).</li>
+    <li><strong>File descriptors</strong> — open files, sockets&hellip;</li>
+    <li><strong>Signal mask</strong>, <strong>working directory</strong>, <strong>environment</strong>&hellip;</li>
+  </ul>
+  <p>Process is created by <strong><code>fork()</code></strong> &mdash; duplicates the calling process; child gets a new PID, otherwise shares everything (memory via copy-on-write). Then <strong><code>exec()</code></strong> replaces the process image with a new program.</p>
+  <p>Process termination: <code>exit()</code>; parent waits with <strong><code>wait()</code> / <code>waitpid()</code></strong> and gets the exit status. Otherwise the child becomes a <em>zombie</em>. If the parent dies first, the child is <em>reparented</em> to <code>init</code> (PID 1), which reaps it.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — process states &amp; scheduling</span>
+  <p>Linux process states (visible in <code>ps</code>):</p>
+  <ul>
+    <li><strong>R</strong> &mdash; running or runnable.</li>
+    <li><strong>S</strong> &mdash; interruptible sleep (waiting for an event).</li>
+    <li><strong>D</strong> &mdash; uninterruptible sleep (usually I/O).</li>
+    <li><strong>Z</strong> &mdash; zombie (finished, waiting to be reaped).</li>
+    <li><strong>T</strong> &mdash; stopped (SIGSTOP, debugger).</li>
+  </ul>
+  <p>Schedulers in Linux: CFS (Completely Fair Scheduler), since 6.6 partially replaced by EEVDF. Real-time policies: SCHED_FIFO, SCHED_RR (when guaranteed timing matters).</p>
+</div>
+
+<h3>Files &amp; I/O</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Files (PV065 Ch.7-8)</span>
+  <p><strong>Everything is a file</strong> &mdash; regular files, directories, devices, sockets, pipes.</p>
+  <h4>File descriptor</h4>
+  <ul>
+    <li>A small non-negative integer; an index into the process's file descriptor table.</li>
+    <li>Standard: 0 = stdin, 1 = stdout, 2 = stderr.</li>
+    <li>Syscalls: <code>open</code>, <code>read</code>, <code>write</code>, <code>close</code>, <code>lseek</code>, <code>ioctl</code>&hellip;</li>
+  </ul>
+  <h4>i-node (inode)</h4>
+  <ul>
+    <li>Per-file metadata structure: owner, group, permissions, size, timestamps (atime, mtime, ctime), direct/indirect block pointers.</li>
+    <li>The directory entry maps a name to an inode number.</li>
+    <li><strong>Hard link</strong> &mdash; another directory entry pointing to the same inode (same data, ref count incremented).</li>
+    <li><strong>Symbolic link</strong> &mdash; a tiny file whose content is a path string.</li>
+  </ul>
+  <h4>Permissions</h4>
+  <ul>
+    <li>rwx for user / group / other.</li>
+    <li>Special: SUID (4000), SGID (2000), sticky bit (1000). Sticky on <code>/tmp</code> prevents users from deleting each other's files.</li>
+    <li>ACLs (POSIX ACL) for finer control &mdash; <code>getfacl</code>, <code>setfacl</code>. (See Q7 for full coverage.)</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Advanced I/O (PV065 Ch.10)</span>
+  <dl class="def-list">
+    <dt>File locking</dt>
+    <dd><code>fcntl</code> advisory locks, <code>flock</code>, mandatory locks (rare).</dd>
+    <dt>Scatter-gather I/O</dt>
+    <dd><code>readv</code> / <code>writev</code> — read/write multiple buffers with one syscall.</dd>
+    <dt>Memory-mapped files</dt>
+    <dd><code>mmap</code> — file pages become memory; great for large files and IPC.</dd>
+    <dt>I/O multiplexing</dt>
+    <dd><code>select</code>, <code>poll</code> — old, O(n) scan. <code>epoll</code> (Linux) / <code>kqueue</code> (BSD) — O(1) events. <code>io_uring</code> — modern Linux async I/O.</dd>
+  </dl>
+</div>
+
+<h3>IPC, signals, pipes</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — IPC (PV065 Ch.9 &amp; Ch.12)</span>
+  <h4>Pipes</h4>
+  <ul>
+    <li>Unnamed pipe &mdash; <code>pipe()</code> returns two FDs (read end, write end); usually used between parent and child after <code>fork()</code>.</li>
+    <li>Named pipe (FIFO) &mdash; <code>mkfifo</code>; file in the filesystem; arbitrary processes can connect.</li>
+    <li>Used by the shell: <code>ls | grep foo | wc -l</code> — three processes connected by pipes.</li>
+  </ul>
+  <h4>Signals</h4>
+  <ul>
+    <li>Async notifications to a process. <code>kill -SIGINT &lt;pid&gt;</code>, <code>signal()</code> / <code>sigaction()</code> to install handlers.</li>
+    <li>Important ones: <strong>SIGINT</strong> (Ctrl-C), <strong>SIGTERM</strong> (please stop), <strong>SIGKILL</strong> (can't be caught, instant kill), <strong>SIGHUP</strong> (terminal hung up / reload config), <strong>SIGSEGV</strong> (segfault), <strong>SIGCHLD</strong> (child changed state).</li>
+  </ul>
+  <h4>System V / POSIX IPC</h4>
+  <ul>
+    <li><strong>Shared memory</strong> &mdash; multiple processes map the same region; fastest IPC.</li>
+    <li><strong>Message queues</strong> &mdash; typed messages.</li>
+    <li><strong>Semaphores</strong> &mdash; synchronization primitives.</li>
+  </ul>
+  <h4>Sockets</h4>
+  <ul>
+    <li>UNIX domain sockets (local) and TCP/UDP sockets (network).</li>
+    <li>BSD sockets API: <code>socket</code>, <code>bind</code>, <code>listen</code>, <code>accept</code>, <code>connect</code>, <code>send</code>, <code>recv</code>.</li>
+  </ul>
+</div>
+
+<h3>Threads</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Threads (PV065 Ch.11)</span>
+  <p>Threads share the same address space but have separate stacks. POSIX threads (<strong>pthreads</strong>): <code>pthread_create</code>, <code>pthread_join</code>, <code>pthread_mutex_*</code>, <code>pthread_cond_*</code>.</p>
+  <p>Synchronization primitives: mutex, condition variable, read-write lock, barrier. Watch out for <strong>race conditions</strong> and <strong>deadlocks</strong>.</p>
+</div>
+
+<h3>Filesystem layout &amp; init (PV077)</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — FHS &amp; key directories (PV077 Ch.3)</span>
+  <ul>
+    <li><code>/</code> &mdash; root; contains everything needed to boot.</li>
+    <li><code>/bin</code>, <code>/sbin</code> &mdash; essential binaries (sbin = administrative).</li>
+    <li><code>/usr/bin</code>, <code>/usr/sbin</code> &mdash; non-essential binaries.</li>
+    <li><code>/lib</code>, <code>/usr/lib</code> &mdash; shared libraries.</li>
+    <li><code>/etc</code> &mdash; configuration.</li>
+    <li><code>/var</code> &mdash; variable data (logs, spool, caches).</li>
+    <li><code>/tmp</code> &mdash; temporary (sticky bit).</li>
+    <li><code>/home</code> &mdash; user home directories.</li>
+    <li><code>/proc</code>, <code>/sys</code> &mdash; virtual: process &amp; kernel state.</li>
+    <li><code>/dev</code> &mdash; device nodes.</li>
+    <li><code>/boot</code> &mdash; kernel, initramfs, bootloader files.</li>
+    <li><code>/opt</code>, <code>/srv</code>, <code>/mnt</code>, <code>/media</code> &mdash; optional packages, served data, mount points.</li>
+  </ul>
+  <p>Common filesystems: <strong>ext4</strong> (Linux default), <strong>XFS</strong> (high-perf, RHEL default), <strong>Btrfs</strong> &amp; <strong>ZFS</strong> (modern, with snapshots, COW).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — init systems (PV077 Ch.4)</span>
+  <ul>
+    <li><strong>SysV init</strong> &mdash; old standard. <code>/etc/inittab</code>, runlevels 0-6 (0=halt, 1=single-user, 3=multi-user TUI, 5=GUI, 6=reboot). Scripts in <code>/etc/init.d</code>; links from <code>/etc/rcN.d</code>.</li>
+    <li><strong>systemd</strong> &mdash; modern. PID 1; manages units (service, socket, timer, mount, target). Parallel startup; dependencies declared. Commands: <code>systemctl start/stop/enable/disable/status &lt;unit&gt;</code>; <code>journalctl</code> for logs.</li>
+    <li><strong>Other</strong>: upstart (Ubuntu, deprecated), OpenRC (Gentoo), runit, s6.</li>
+  </ul>
+</div>
+
+<h3>Users &amp; groups</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Users &amp; groups (PV077 Ch.5)</span>
+  <ul>
+    <li><strong>UID / GID</strong> &mdash; kernel's view of user/group identity.</li>
+    <li><strong>Username</strong> &mdash; used for login and logging.</li>
+    <li>Primary database: <strong><code>/etc/passwd</code></strong>, <strong><code>/etc/group</code></strong>.</li>
+  </ul>
+  <h4><code>/etc/passwd</code> format</h4>
+  <pre><code>ayanami:x:1999:2014:Rei Ayanami:/home/ayanami:/bin/bash
+└──────┴┴────┴────┴────────────┴───────────────┴─────────
+ user pw  UID  GID  GCOS         home            shell</code></pre>
+  <ul>
+    <li>Username &mdash; key.</li>
+    <li>Password &mdash; encrypted (<code>x</code> means stored in shadow).</li>
+    <li>UID &mdash; not necessarily unique (you can have multiple usernames mapping to UID 0).</li>
+    <li>GID &mdash; real/effective GID after login.</li>
+    <li>GCOS &mdash; comment, usually full name. Some systems use structured fields (room, phone) for <code>finger(1)</code>. <em>"GCOS" = General Electric Comprehensive Operating System — Dennis Ritchie said this field was "where to stash info for the $IDENT card. Not elegant."</em></li>
+    <li>Home directory.</li>
+    <li>Login shell.</li>
+  </ul>
+  <h4>Password encryption</h4>
+  <ul>
+    <li>Originally 25-round DES with 2-char salt. Library function <code>crypt(3)</code>.</li>
+    <li>Modern: MD5, SHA-1, SHA-512, bcrypt, Argon2 &mdash; all with salt. Format: <code>$6$&lt;salt&gt;$&lt;hash&gt;</code> = SHA-512.</li>
+  </ul>
+  <h4>Shadow passwords</h4>
+  <ul>
+    <li>Standard UNIX passwords were exposed to brute force (John the Ripper) and dictionary attacks (<code>crack(8)</code>).</li>
+    <li>Solution: <strong><code>/etc/shadow</code></strong> &mdash; passwords + aging info stored in a root-only file. Requires set-uid/gid on tools.</li>
+    <li>BSD uses <code>/etc/master.passwd</code>.</li>
+  </ul>
+  <h4><code>/etc/group</code> format</h4>
+  <pre><code>nerv:x:2014:ayanami,asuka,shinji</code></pre>
+  <ul>
+    <li>Group name &mdash; for logging and <code>newgrp(1)</code>.</li>
+    <li>Password &mdash; usually unused; might be in <code>/etc/gshadow</code>.</li>
+    <li>GID &mdash; system identifier.</li>
+    <li>Member list &mdash; comma-separated usernames. Primary group is implicit; user need not be listed there.</li>
+  </ul>
+  <h4>User management commands</h4>
+  <ul>
+    <li><code>vipw(8)</code> &mdash; safe editing (locks).</li>
+    <li><code>useradd</code>, <code>userdel</code>, <code>usermod</code>, <code>groupadd</code>, <code>groupdel</code>, <code>groupmod</code> &mdash; batch add/remove; creates home dir, allocates free UID, copies <code>/etc/skel</code>.</li>
+    <li><code>chfn(8)</code> &mdash; change user info (GCOS).</li>
+    <li><code>passwd</code> &mdash; change own password (or any with root).</li>
+    <li><code>pwconv(8)</code> &mdash; convert passwords to shadow.</li>
+  </ul>
+  <h4>systemd dynamic users</h4>
+  <p>UID/GID allocation rules: <a href="https://systemd.io/UIDS-GIDS/">systemd.io/UIDS-GIDS</a>. Declarative creation: <code>/usr/lib/sysusers.d/*.conf</code>, applied by <code>systemd-sysusers(8)</code>.</p>
+  <h4>PAM &amp; NSSwitch</h4>
+  <p>Two layers worth knowing:</p>
+  <ul>
+    <li><strong>PAM</strong> (Pluggable Authentication Modules) &mdash; <code>/etc/pam.d/*</code> stacks of modules for auth, account, password, session. Lets you plug in LDAP, Kerberos, two-factor, &hellip; without changing login programs.</li>
+    <li><strong>NSSwitch</strong> (Name Service Switch) &mdash; <code>/etc/nsswitch.conf</code> defines where to look up user names, hostnames, etc. (files / DNS / LDAP / NIS).</li>
+  </ul>
+</div>
+
+<h3>Local subsystems</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Subsystems (PV077 Ch.8)</span>
+  <ul>
+    <li><strong>syslog</strong> / <strong>journald</strong> &mdash; system logging. Facilities (auth, cron, daemon, kern, mail&hellip;) × severities (emerg, alert, crit, err, warn, notice, info, debug). Config: <code>/etc/rsyslog.conf</code>; journald uses binary journal in <code>/var/log/journal</code>.</li>
+    <li><strong>cron</strong> &mdash; scheduled jobs. <code>/etc/crontab</code>, <code>/etc/cron.{daily,hourly,weekly,monthly}</code>, per-user crontabs via <code>crontab -e</code>. Modern replacement: <strong>systemd timers</strong>.</li>
+    <li><strong>Printers</strong> &mdash; CUPS (Common UNIX Printing System).</li>
+    <li><strong>Disk quotas</strong> &mdash; per-user / per-group limits on disk usage. <code>quotaon</code>, <code>edquota</code>.</li>
+  </ul>
+</div>
+
+<h3>Virtualization &amp; containers</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Virtualization (PV077 Ch.9)</span>
+  <ul>
+    <li><strong>Full virtualization</strong> &mdash; KVM (Linux kernel hypervisor), QEMU, VMware, Hyper-V.</li>
+    <li><strong>Paravirtualization</strong> &mdash; Xen.</li>
+    <li><strong>Containers</strong> &mdash; LXC, Docker, Podman. Built on kernel features:
+      <ul>
+        <li><strong>namespaces</strong> &mdash; isolate PID, network, mount, UTS, IPC, user.</li>
+        <li><strong>cgroups</strong> &mdash; resource limits (CPU, memory, I/O).</li>
+        <li><strong>seccomp</strong>, <strong>capabilities</strong> &mdash; restrict syscalls and privileges.</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<h3>UNIX networking (PV077)</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — TCP/IP (PV077 Ch.10-11)</span>
+  <p>Covered in detail in <a href="04-networks.html">Q4 Networks</a>. UNIX-specific bits:</p>
+  <ul>
+    <li><strong>BSD sockets API</strong> &mdash; <code>socket()</code>, <code>bind()</code>, <code>listen()</code>, <code>accept()</code>, <code>connect()</code>, <code>send()</code>/<code>recv()</code>, <code>close()</code>.</li>
+    <li><strong>Network config</strong> &mdash; <code>ip addr</code>, <code>ip route</code> (modern), legacy <code>ifconfig</code>, <code>route</code>. Per-distro config in <code>/etc/network/interfaces</code> (Debian), <code>/etc/sysconfig/network-scripts/</code> (RHEL), NetworkManager, systemd-networkd.</li>
+    <li><strong>ARP / ND</strong> &mdash; address resolution. <code>arp -n</code>, <code>ip neigh</code>.</li>
+    <li><strong>Address allocation</strong> &mdash; static, DHCP (<code>dhclient</code>, NetworkManager), SLAAC (IPv6).</li>
+    <li><strong>Routing</strong> &mdash; static (<code>ip route add</code>); dynamic via daemons (BIRD, FRR — these speak BGP/OSPF/RIP).</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Network services</span>
+  <dl class="def-list">
+    <dt>DNS</dt>
+    <dd>Hierarchical name resolution. <strong>BIND</strong> is the canonical UNIX implementation. Record types: A, AAAA, CNAME, MX, NS, SOA, TXT, PTR (reverse). <code>dig</code>, <code>nslookup</code>, <code>host</code> for queries.</dd>
+
+    <dt>RPC, NFS, NIS/YP</dt>
+    <dd>Sun RPC (Remote Procedure Call) with XDR (External Data Representation). <strong>portmapper</strong> (<code>rpcbind</code>) maps RPC programs to ports. <strong>NFS</strong> (Network File System) — share filesystem over network. <strong>NIS/YP</strong> (Network Information Service / Yellow Pages) — centralized user/group/host info; largely superseded by LDAP today.</dd>
+
+    <dt>LDAP</dt>
+    <dd>Lightweight Directory Access Protocol. Tree of entries (DNs). Used as centralized user/group store integrating with PAM/NSSwitch. OpenLDAP is the standard implementation. <strong>Active Directory</strong> is Microsoft's LDAP-based directory.</dd>
+
+    <dt>Kerberos</dt>
+    <dd>Network authentication protocol. <em>Tickets</em> instead of passwords on the wire. KDC (Key Distribution Center) issues TGTs and service tickets. Symmetric crypto. Foundation of single sign-on in UNIX/Windows environments.</dd>
+
+    <dt>Email</dt>
+    <dd>Message format: <strong>RFC 5322</strong> (was 2822, originally 822). Protocols: <strong>SMTP</strong> (sending, port 25/465/587), <strong>POP3</strong> (download, 110/995), <strong>IMAP</strong> (sync, 143/993). UNIX MTAs: Sendmail, Postfix, Exim.</dd>
+
+    <dt>Firewalls</dt>
+    <dd>Linux: <strong>netfilter</strong> in-kernel, <strong>iptables</strong> (old userspace tool), <strong>nftables</strong> (modern replacement, unified rule syntax). <strong>firewalld</strong>, <strong>ufw</strong> are higher-level wrappers.</dd>
+  </dl>
+</div>
+
+<h3>UNIX dev environment (PV065)</h3>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Toolchain (PV065 Ch.2-4)</span>
+  <ul>
+    <li><strong>Standards</strong> &mdash; ANSI C, POSIX.1, Single UNIX Specification (SUS). Code following SUS should be portable across UNIXes.</li>
+    <li><strong>C program startup &amp; termination</strong> &mdash; <code>main(argc, argv, envp)</code>; <code>exit()</code>, <code>_exit()</code>, <code>atexit()</code>; argument and environment access.</li>
+    <li><strong>Memory</strong> &mdash; <code>malloc/free/calloc/realloc</code>; long jumps with <code>setjmp/longjmp</code>.</li>
+    <li><strong>Header files &amp; libraries</strong> &mdash; static (<code>.a</code>), shared (<code>.so</code>), dynamic linking via <code>ld.so</code> &amp; <code>LD_LIBRARY_PATH</code>.</li>
+    <li><strong>Build tools</strong> &mdash; <code>gcc</code>, <code>clang</code>, <code>make</code>, <code>cmake</code>, <code>autoconf</code> family.</li>
+    <li><strong>Debugging</strong> &mdash; <code>gdb</code> (interactive), <code>strace</code> (syscalls), <code>ltrace</code> (lib calls), <code>valgrind</code> (memory errors), <code>perf</code> (profiling).</li>
+  </ul>
+  <p>The slides' typographic conventions hint at the cross-platform realism of UNIX classes:</p>
+  <ul>
+    <li>"<em>Linux-specific feature</em>" &mdash; one bullet style.</li>
+    <li>"<em>...for BSD, Solaris, IRIX, Red Hat/Fedora, GNU tools</em>" &mdash; another.</li>
+  </ul>
+  <p>And the eternal warning: <strong><code>root@eva01# rm -rf /</code></strong> — definitely do not run this.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Part B — MS Windows (PV175)</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Course outline (PV175 — IS text dump)</span>
+  <p>The PV175 material on hand is a course-outline text from IS MUNI rather than slide content. The course covers <strong>Windows 10/11</strong> on machines <em>without</em> central management (PV176 covers Windows Server &amp; centralized management). Per the outline:</p>
+  <ul>
+    <li><strong>Week 1</strong> &mdash; Practice environment, install media &amp; keys, Hyper-V, virtual machine, basic install. Windows editions &amp; licensing. OS support lifecycle.</li>
+    <li><strong>Week 2</strong> &mdash; User accounts (basic management).</li>
+    <li><strong>Week 3</strong> &mdash; User accounts deeper, user profiles.</li>
+    <li><strong>Week 4</strong> &mdash; Windows installation &amp; basic configuration.</li>
+    <li><strong>Week 5</strong> &mdash; CLI &amp; automation (PowerShell).</li>
+    <li><strong>Week 6</strong> &mdash; Monitoring, diagnostics, system tuning.</li>
+    <li><strong>Week 7</strong> &mdash; Disks and filesystems I.</li>
+    <li><strong>Week 8</strong> &mdash; Disks &amp; filesystems II / NTFS attributes, permissions, sharing. Disk encryption — BitLocker, EFS, encrypting external media.</li>
+    <li><strong>Week 9</strong> &mdash; Network configuration, firewall, remote access (network profiles, tools, firewall; remote support &amp; admin).</li>
+    <li><strong>Week 10</strong> &mdash; Application management &amp; device management (hardware devices).</li>
+    <li><strong>Week 11</strong> &mdash; Windows security (additional features).</li>
+    <li><strong>Week 12</strong> &mdash; Troubleshooting, backup &amp; recovery (built-in Windows tools, repair options).</li>
+    <li><strong>Week 13</strong> &mdash; Network collaboration, dual boot, a few Windows 11 tools.</li>
+    <li><strong>Week 14</strong> &mdash; Intro to PV176 (Windows Server).</li>
+  </ul>
+  <p>The course is taught via e-learning in IS MUNI; texts are in Czech, screenshots/tools in English.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — what the exam wants you to know about Windows</span>
+  <p>The slide outline only lists topics; the exam still expects substance. Here's a precise summary of each:</p>
+</div>
+
+<h3>Windows OS architecture</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — NT architecture</span>
+  <p>Modern Windows (10, 11, Server) descends from <strong>Windows NT</strong> (1993). High-level layers:</p>
+  <ol>
+    <li><strong>Hardware</strong></li>
+    <li><strong>HAL</strong> (Hardware Abstraction Layer) &mdash; isolates the kernel from CPU/board specifics.</li>
+    <li><strong>Kernel</strong> &mdash; scheduling, interrupts, low-level synchronization.</li>
+    <li><strong>Executive</strong> &mdash; object manager, memory manager, I/O manager, process manager, security reference monitor.</li>
+    <li><strong>Subsystems</strong> &mdash; Win32, POSIX (legacy), WSL (Windows Subsystem for Linux).</li>
+    <li><strong>User mode</strong> &mdash; applications + system services (Services, Session Manager, Local Security Authority).</li>
+  </ol>
+  <p>"Everything is an <strong>object</strong>" — files, processes, threads, registry keys, named pipes &mdash; all are NT objects accessed via <strong>handles</strong> (the Windows analog of UNIX file descriptors).</p>
+</div>
+
+<h3>Basic configuration</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Windows config surfaces</span>
+  <ul>
+    <li><strong>Settings app</strong> (modern, touch-friendly).</li>
+    <li><strong>Control Panel</strong> (legacy, still present).</li>
+    <li><strong>Registry</strong> &mdash; hierarchical config DB. Hives:
+      <ul>
+        <li><code>HKEY_LOCAL_MACHINE</code> (HKLM) &mdash; machine-wide.</li>
+        <li><code>HKEY_CURRENT_USER</code> (HKCU) &mdash; current user.</li>
+        <li><code>HKEY_USERS</code> (HKU) &mdash; all loaded users.</li>
+        <li><code>HKEY_CLASSES_ROOT</code> (HKCR) &mdash; file associations.</li>
+        <li><code>HKEY_CURRENT_CONFIG</code> (HKCC) &mdash; current hardware profile.</li>
+      </ul>
+      Edit with <code>regedit.exe</code> or PowerShell.
+    </li>
+    <li><strong>Group Policy</strong> (<code>gpedit.msc</code>) &mdash; local; in AD environments, centrally managed.</li>
+    <li><strong>Services</strong> (<code>services.msc</code>) &mdash; background daemons; analogous to UNIX systemd units.</li>
+    <li><strong>Task Scheduler</strong> &mdash; UI for scheduled tasks (analog of cron).</li>
+    <li><strong>WMI</strong> (Windows Management Instrumentation) &mdash; introspection API used by management tools.</li>
+  </ul>
+</div>
+
+<h3>User management</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Windows user model</span>
+  <ul>
+    <li><strong>SID</strong> (Security Identifier) &mdash; the actual identity (e.g. <code>S-1-5-21-…-1001</code>); usernames are display labels mapped to SIDs.</li>
+    <li><strong>Local vs domain accounts</strong>:
+      <ul>
+        <li>Local &mdash; defined in the SAM database on the local machine.</li>
+        <li>Domain &mdash; defined in Active Directory; same identity across all domain machines.</li>
+        <li>Microsoft account &mdash; cloud-managed (Outlook/Live).</li>
+      </ul>
+    </li>
+    <li><strong>Built-in groups</strong> &mdash; Administrators, Users, Guests, Power Users (legacy).</li>
+    <li><strong>UAC</strong> (User Account Control) &mdash; even admins run with standard-user token by default; elevation requested per-action with the consent prompt.</li>
+    <li><strong>User profiles</strong> &mdash; per-user directory tree (<code>C:\Users\&lt;name&gt;</code>). Roaming profiles in AD environments. Default profile in <code>C:\Users\Default</code>.</li>
+    <li>Tools: <code>net user</code>, <code>net localgroup</code> (CLI), <code>lusrmgr.msc</code> (GUI), PowerShell cmdlets <code>New-LocalUser</code>, <code>Add-LocalGroupMember</code>.</li>
+  </ul>
+</div>
+
+<h3>NTFS file system</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — NTFS features</span>
+  <p>The default Windows filesystem since NT 3.1 (1993).</p>
+  <ul>
+    <li><strong>Journaling</strong> &mdash; metadata changes written to a log first, replayed after a crash. Same idea as ext3/ext4 journaling.</li>
+    <li><strong>ACLs (discretionary)</strong> &mdash; per-file/folder. Far more granular than UNIX rwx: separate read/write/execute/delete/take-ownership/change-permission entries per principal. Inherited from parent folder by default. Manage via Properties → Security or <code>icacls</code>.</li>
+    <li><strong>Alternate Data Streams</strong> (ADS) &mdash; multiple data streams per file (<code>file.txt:hidden.txt</code>). Used by the OS (e.g. <code>Zone.Identifier</code> marks files downloaded from the internet) and historically by malware.</li>
+    <li><strong>Hard links</strong> (<code>mklink /H</code>) &mdash; multiple directory entries to one MFT record.</li>
+    <li><strong>Junctions / Symlinks</strong> (<code>mklink /J</code>, <code>mklink</code>) &mdash; redirection points.</li>
+    <li><strong>Sparse files</strong> &mdash; large files with mostly zero content take minimal disk space.</li>
+    <li><strong>Compression</strong> &mdash; per-file/folder transparent NTFS compression.</li>
+    <li><strong>EFS</strong> (Encrypting File System) &mdash; per-file encryption tied to user account.</li>
+    <li><strong>BitLocker</strong> &mdash; full-volume encryption; uses TPM for key sealing; BitLocker To Go for removable drives.</li>
+    <li><strong>Quotas</strong> &mdash; per-user storage limits.</li>
+    <li><strong>VSS</strong> (Volume Shadow Copy Service) &mdash; snapshot mechanism powering "Previous Versions" and many backup tools.</li>
+  </ul>
+  <p>Successor in heavy storage roles: <strong>ReFS</strong> (Resilient File System) &mdash; for Storage Spaces, Hyper-V hosts.</p>
+</div>
+
+<h3>HW devices &amp; drivers</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Windows drivers</span>
+  <ul>
+    <li><strong>Device Manager</strong> (<code>devmgmt.msc</code>) &mdash; tree of installed devices.</li>
+    <li><strong>Driver models</strong>:
+      <ul>
+        <li><strong>WDM</strong> (Windows Driver Model) — older, kernel-mode.</li>
+        <li><strong>WDF</strong> (Windows Driver Framework) — modern; KMDF (kernel-mode) and UMDF (user-mode).</li>
+      </ul>
+    </li>
+    <li><strong>Driver signing</strong> &mdash; Windows requires drivers to be signed (since 64-bit Vista); enforcement can be reduced for testing but not in normal use.</li>
+    <li><strong>PnP</strong> (Plug-and-Play) &mdash; automatic device detection &amp; driver loading.</li>
+    <li><strong>Drivers via Windows Update</strong> &mdash; default delivery channel.</li>
+    <li><strong>BSoD</strong> (Blue Screen of Death) &mdash; kernel-mode driver crashes are the most common cause.</li>
+  </ul>
+</div>
+
+<h3>Networking (Windows)</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Windows networking</span>
+  <ul>
+    <li><strong>Network profiles</strong> &mdash; Public, Private, Domain. Different firewall defaults per profile.</li>
+    <li><strong>Windows Defender Firewall</strong> &mdash; built-in. Manage via Settings, <code>wf.msc</code> (Advanced), or <code>netsh advfirewall</code> / PowerShell <code>Get-NetFirewallRule</code>.</li>
+    <li><strong>Tools</strong> &mdash; <code>ipconfig</code>, <code>ping</code>, <code>tracert</code>, <code>netstat</code>, <code>nslookup</code>, <code>Test-NetConnection</code> (PS), <code>Get-NetTCPConnection</code>.</li>
+    <li><strong>Remote access</strong>:
+      <ul>
+        <li><strong>RDP</strong> (Remote Desktop Protocol) &mdash; <code>mstsc.exe</code>; port 3389.</li>
+        <li><strong>WinRM / PowerShell Remoting</strong> &mdash; <code>Enter-PSSession</code>, <code>Invoke-Command</code> over WS-Management.</li>
+        <li><strong>SSH</strong> &mdash; built into Windows 10+ (both client and OpenSSH server optional feature).</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<h3>Scripting</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Windows scripting options</span>
+  <ul>
+    <li><strong>CMD / batch (<code>.bat</code>, <code>.cmd</code>)</strong> &mdash; legacy; tiny syntax, terrible quoting.</li>
+    <li><strong>PowerShell</strong> &mdash; the modern shell. Cmdlets follow <code>Verb-Noun</code> convention (<code>Get-Process</code>, <code>Stop-Service</code>, <code>New-Item</code>). Pipelines pass <em>objects</em>, not text — fundamentally different from UNIX shells.</li>
+    <li><strong>VBScript / WSH</strong> &mdash; legacy; on its way out.</li>
+    <li><strong>Python, WSL bash</strong> &mdash; both fully usable on modern Windows.</li>
+  </ul>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — PowerShell flavor</span>
+<pre><code># Get top 5 processes by CPU usage
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 5
+
+# Create a local user and add to Administrators
+$pw = Read-Host -AsSecureString -Prompt "Password"
+New-LocalUser -Name "andrej" -Password $pw -FullName "Andrej"
+Add-LocalGroupMember -Group "Administrators" -Member "andrej"
+
+# Schedule a daily task (no interactive editor like crontab)
+$action  = New-ScheduledTaskAction -Execute "powershell.exe" `
+           -Argument "-File C:\scripts\backup.ps1"
+$trigger = New-ScheduledTaskTrigger -Daily -At 3am
+Register-ScheduledTask -TaskName "NightlyBackup" `
+       -Action $action -Trigger $trigger -RunLevel Highest
+
+# Find files larger than 100 MB in C:\Users
+Get-ChildItem C:\Users -Recurse -File -ErrorAction SilentlyContinue |
+  Where-Object { $_.Length -gt 100MB } |
+  Sort-Object Length -Descending |
+  Select-Object FullName, @{N='MB';E={[int]($_.Length/1MB)}}
+</code></pre>
+  <p>The pipe carries .NET objects; <code>Where-Object</code> filters them by property; <code>Select-Object</code> projects fields. No text parsing required.</p>
+</div>
+
+<h3>Backup &amp; recovery</h3>
+
+<div class="block added">
+  <span class="block-tag">ADDED — Windows recovery tools</span>
+  <ul>
+    <li><strong>File History</strong> &mdash; per-user file backups to an external drive (versions kept).</li>
+    <li><strong>Windows Backup</strong> &mdash; system image backup (legacy "Backup and Restore (Windows 7)").</li>
+    <li><strong>System Restore</strong> &mdash; rolls back system files &amp; registry to a restore point.</li>
+    <li><strong>Recovery Environment (WinRE)</strong> &mdash; pre-boot menu offering Startup Repair, System Restore, Reset PC, Command Prompt.</li>
+    <li><strong>Reset this PC</strong> &mdash; reinstall keeping or removing personal files.</li>
+    <li><strong>Volume Shadow Copies</strong> &mdash; "Previous Versions" tab.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>UNIX vs Windows — side-by-side</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — quick comparison</span>
+  <table>
+    <thead><tr><th>Concept</th><th>UNIX/Linux</th><th>Windows</th></tr></thead>
+    <tbody>
+      <tr><td>Process creation</td><td><code>fork() + exec()</code></td><td><code>CreateProcess()</code></td></tr>
+      <tr><td>Init system</td><td>systemd / SysV</td><td>Service Control Manager (services.msc)</td></tr>
+      <tr><td>Identity</td><td>UID/GID</td><td>SID</td></tr>
+      <tr><td>User DB</td><td><code>/etc/passwd</code> + <code>/etc/shadow</code></td><td>SAM (local) / Active Directory (domain)</td></tr>
+      <tr><td>Auth framework</td><td>PAM</td><td>LSA, Credential Providers</td></tr>
+      <tr><td>Filesystem ACLs</td><td>rwx + POSIX ACL</td><td>NTFS ACL (much finer)</td></tr>
+      <tr><td>Default FS</td><td>ext4, XFS, btrfs, ZFS</td><td>NTFS, ReFS</td></tr>
+      <tr><td>"Everything is X"</td><td>a file</td><td>an object (handle)</td></tr>
+      <tr><td>Config storage</td><td>text files in <code>/etc</code></td><td>Registry + INI files</td></tr>
+      <tr><td>Scheduled tasks</td><td>cron, systemd timers</td><td>Task Scheduler</td></tr>
+      <tr><td>Logging</td><td>syslog / journald</td><td>Event Viewer (Windows Event Log)</td></tr>
+      <tr><td>Shell</td><td>bash / zsh (text pipes)</td><td>PowerShell (object pipes)</td></tr>
+      <tr><td>Remote shell</td><td>SSH</td><td>RDP, WinRM, SSH (since W10)</td></tr>
+      <tr><td>Driver model</td><td>kernel modules</td><td>WDM / WDF</td></tr>
+      <tr><td>Package manager</td><td>apt / dnf / pacman</td><td>winget, MSIX, Chocolatey (3rd party)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical examples</h2>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — minimal C process under UNIX</span>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(void) {
+    pid_t pid = fork();
+    if (pid &lt; 0) { perror("fork"); exit(1); }
+    if (pid == 0) {                          // child
+        execlp("ls", "ls", "-la", NULL);     // replaces image
+        perror("exec");                      // only reached on error
+        _exit(127);
+    } else {                                 // parent
+        int status;
+        waitpid(pid, &amp;status, 0);
+        printf("child exited with %d\n", WEXITSTATUS(status));
+    }
+    return 0;
+}
+</code></pre>
+  <p>This is fork+exec+wait in 15 lines. Every shell you've ever used does this thousands of times a day.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — UNIX administration cookbook</span>
+<pre><code># Find which process holds port 8080
+sudo ss -lntp | grep ':8080'
+
+# Watch syslog in real time, filter for sshd
+journalctl -u ssh -f
+
+# Add a user with home dir, default shell, sudo
+sudo useradd -m -s /bin/bash andrej
+sudo passwd andrej
+sudo usermod -aG sudo andrej
+
+# Mount an NFS share at boot — add to /etc/fstab:
+# server:/exports/data  /mnt/data  nfs  defaults,noatime  0 0
+sudo mount -a
+
+# Schedule a backup nightly via systemd timer
+# /etc/systemd/system/backup.service + backup.timer
+
+# Show disk usage by top-level dirs
+sudo du -h --max-depth=1 / 2>/dev/null | sort -h
+</code></pre>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION — answering "compare UNIX and Windows"</span>
+  <p>Three angles examiners like:</p>
+  <ol>
+    <li><strong>Philosophy</strong> — UNIX: "everything is a file," small composable tools, text streams. Windows: "everything is an object," large integrated subsystems, object pipelines (PowerShell).</li>
+    <li><strong>Identity &amp; auth</strong> — UNIX has UID/GID + PAM + /etc/passwd. Windows has SID + Local Security Authority + SAM/AD.</li>
+    <li><strong>Permissions</strong> — UNIX has rwx with POSIX ACL extension. NTFS has fine-grained ACEs natively.</li>
+  </ol>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=tc4ROCJYbm0" target="_blank">Linux Boot Process explained &mdash; Kernel.org</a></li>
+    <li><a href="https://www.youtube.com/watch?v=cKj0BOG-NUM" target="_blank">How Linux is Built &mdash; Linux Foundation</a></li>
+    <li><a href="https://www.youtube.com/watch?v=gZl0gva0p3A" target="_blank">systemd in 100 seconds &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=qzMO9My36-Y" target="_blank">PowerShell in 100 seconds &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=GbZmkVUSC9I" target="_blank">NTFS &mdash; Dave's Garage (Windows insider perspective)</a></li>
+    <li><a href="https://www.youtube.com/watch?v=mLApb5lCko4" target="_blank">fork() &amp; exec() explained &mdash; Brian Will</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Sources: <code>materialy/PV065</code> (Jan Kasprzak — UNIX I) chapters 1-12; <code>materialy/PV077</code> (Jan Kasprzak — UNIX II) chapters 1-12; <code>materialy/PV175/all.txt</code> (Windows course outline from IS MUNI). Slides translated from Czech. PV175 is a topical outline only, so the Windows half leans heavily on <span class="tag added">ADDED</span> expansions.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

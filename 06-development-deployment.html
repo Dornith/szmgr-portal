@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q6 Development &amp; Deployment — SZMGR-SWE Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <a href="index.html" class="brand">SZMGR-SWE <span class="brand-tag">portal</span></a>
+    <nav>
+      <a href="01-code-quality.html">Q1 Code Quality</a>
+      <a href="02-software-engineering.html">Q2 SW Eng</a>
+      <a href="03-databases.html">Q3 DB</a>
+      <a href="04-networks.html">Q4 Networks</a>
+      <a href="05-distributed-systems.html">Q5 DS</a>
+      <a href="06-development-deployment.html">Q6 Dev/Deploy</a>
+      <a href="07-secure-infrastructure.html">Q7 Secure Infra</a>
+      <a href="08-cloud.html">Q8 Cloud</a>
+      <a href="09-operating-systems.html">Q9 OS</a>
+      <a href="10-nosql.html">Q10 NoSQL</a>
+    </nav>
+    <button class="theme-toggle" title="Toggle theme">theme</button>
+  </div>
+</header>
+
+<div class="page">
+<main>
+
+<section class="q-hero">
+  <div class="q-label">Question 6 &middot; <span class="course-code">PA165</span> <span class="course-code">PV179</span> <span class="course-code">SA200</span></div>
+  <h1>Development and deployment of software systems</h1>
+  <p class="q-text">
+    Tools and environments for the development and deployment of large-scale software systems.
+    Basic concepts of software architectures in terms of implementation and long-term maintenance.
+    Technologies supporting continuous integration and deployment (CI/CD).
+    Choosing the appropriate programming language. Persistence, ORM.
+    Practical examples for all of the above.
+  </p>
+  <div class="q-source">Primary sources: <code>1_programovani_a_softwarovy_vyvoj.md</code> + <code>materialy/PA165</code> lecture slides</div>
+</section>
+
+<h4>Sub-topic coverage map</h4>
+<ul class="subtopic-list">
+  <li>Modern info system complexity</li>
+  <li>Lehman's laws</li>
+  <li>Dev tools &amp; environments</li>
+  <li>SW architectures (impl perspective)</li>
+  <li>IoC / DI / AOP</li>
+  <li>Microservices vs monolith</li>
+  <li>Layered, hexagonal, SOA</li>
+  <li>CI / CD / CD (deploy)</li>
+  <li>Branching strategies</li>
+  <li>GitLab pipelines</li>
+  <li>CI/CD security</li>
+  <li>Choosing a language</li>
+  <li>JDBC, JPA, Hibernate</li>
+  <li>Entities, persistence context</li>
+  <li>JPQL, Criteria API</li>
+  <li>Relationships, cascading</li>
+</ul>
+
+<!-- ============================================ -->
+<h2>Modern systems &amp; why this question exists</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — PA165 Intro</span>
+  <p>Modern information systems are typically large software systems based on multiple components that need to co-evolve. The complexity of modern info systems makes them similar to complex systems in other domains (e.g. biology, social networks). <strong>Can a single developer understand the whole system?</strong></p>
+  <p>Challenges of modern system design:</p>
+  <ul>
+    <li>Need an <strong>advanced orchestration platform</strong> (Kubernetes / OpenShift) to schedule resources, deploy containers, auto-scale. Manual would be impossible.</li>
+    <li>Single components are now distributed and must find each other and communicate &rarr; need additional pieces like service proxies and meshes.</li>
+    <li>The more connected components, the less reliable the system &mdash; cascading failures can happen. Need <strong>retries / circuit breakers</strong>.</li>
+    <li>Latency may grow with many-service communication.</li>
+    <li><strong>Observability / monitoring</strong> is required to understand call flow.</li>
+    <li>Need ways to represent and track changes to the software architecture.</li>
+    <li>Management of the whole development process (DevOps, CI/CD).</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Lehman's Laws of Software Evolution</span>
+  <table>
+    <thead><tr><th>Law</th><th>What it says</th></tr></thead>
+    <tbody>
+      <tr><td>Continuing change</td><td>Systems must continuously change or become less useful.</td></tr>
+      <tr><td>Increasing complexity</td><td>Changes lead to more complex structure; activities are needed to reduce complexity over time.</td></tr>
+      <tr><td>Large program evolution</td><td>Attributes such as size, errors are invariant for each system release.</td></tr>
+      <tr><td>Organisational stability</td><td>Rate of development is approximately constant over the lifecycle.</td></tr>
+      <tr><td>Conservation of familiarity</td><td>Incremental changes in each release are constant over the lifecycle.</td></tr>
+      <tr><td>Continuing growth</td><td>Functionality must increase to maintain user satisfaction.</td></tr>
+      <tr><td>Declining quality</td><td>Quality declines over time if the system is not adapted to operational changes.</td></tr>
+      <tr><td>Feedback system</td><td>Evolution should be considered as a multi-loop feedback system.</td></tr>
+    </tbody>
+  </table>
+  <p>These laws are the academic underpinning for <em>why we need CI/CD, monitoring, modular architectures, and lifecycle management at all</em>.</p>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>Everything in this question (tools, architectures, CI/CD, ORM) is engineering's answer to Lehman's laws. Each tool exists to <em>fight</em> at least one law: refactoring fights increasing complexity; CI/CD fights declining quality; orchestration fights organisational instability; ORM fights the impedance mismatch that adds complexity on every schema change.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Tools and environments for development</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO (1_programovani)</span>
+  <p>For developing large systems, the following tool categories are used:</p>
+  <dl class="def-list">
+    <dt>Editors and IDEs</dt>
+    <dd>Ideally (if the language supports the Language Server Protocol) up to developer preference. From simple editors to full IDEs (Vim/Neovim, VS Code, JetBrains products).</dd>
+
+    <dt>Version control systems</dt>
+    <dd>Manage source-code versions and collaboration (Git, SVN). Usually run on a platform &mdash; hosted (GitHub, GitLab) or self-hosted (GitLab). Platforms usually offer more than source management (CI/CD, issue tracking).</dd>
+
+    <dt>Project management tools</dt>
+    <dd>Tasks, bug tracking, team communication (ClickUp, Jira, GitHub).</dd>
+
+    <dt>Testing tools</dt>
+    <dd>Create and run tests, simulate user interactions, verify functionality (Jest, <code>cargo test</code>, Insomnia, Postman).</dd>
+
+    <dt>CI/CD tools</dt>
+    <dd>Automate test runs and the final product build (GitHub Workflows, GitLab CI/CD, CircleCI, Travis CI, Jenkins).</dd>
+
+    <dt>Monitoring and logging</dt>
+    <dd>Track performance and analyze errors (Grafana).</dd>
+
+    <dt>Documentation tools</dt>
+    <dd>Describe how the system and its parts work. Generate code documentation from source to minimise staleness (<code>cargo doc</code>, OpenAPI &mdash; machine-readable JSON/YAML, generatable from annotations or used to generate examples; for simple formatted text, Markdown). Documentation matters especially for exposed APIs.</dd>
+
+    <dt>Container environments</dt>
+    <dd>Minimise differences between environments &mdash; dev, test, prod &mdash; and aid reproducibility (Docker, Podman).</dd>
+
+    <dt>Code analysis tools</dt>
+    <dd>Check standards, ensure quality, find potential issues (<code>cargo clippy</code>, ESLint, SonarQube).</dd>
+  </dl>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — your DevOps stack mapped to these categories</span>
+  <table>
+    <thead><tr><th>Category</th><th>Your tools</th></tr></thead>
+    <tbody>
+      <tr><td>IDE</td><td>IntelliJ IDEA (Java), VS Code</td></tr>
+      <tr><td>VCS + Platform</td><td>Git on GitLab (self-hosted at MUNI) / GitHub</td></tr>
+      <tr><td>Project mgmt</td><td>Jira / GitLab Issues</td></tr>
+      <tr><td>Build</td><td>Maven, Gradle (Java); npm/yarn/pnpm; <code>cargo</code></td></tr>
+      <tr><td>Testing</td><td>JUnit + Mockito + Testcontainers, REST Assured, Playwright</td></tr>
+      <tr><td>CI/CD</td><td>Jenkins, GitLab CI/CD, GitHub Actions, AWS CodePipeline</td></tr>
+      <tr><td>Monitoring</td><td>Grafana + Prometheus, CloudWatch, Datadog</td></tr>
+      <tr><td>Logging</td><td>ELK / OpenSearch, CloudWatch Logs</td></tr>
+      <tr><td>Tracing</td><td>OpenTelemetry &rarr; Jaeger / X-Ray</td></tr>
+      <tr><td>Docs</td><td>OpenAPI/Swagger, Markdown, Javadoc, Confluence</td></tr>
+      <tr><td>Containers</td><td>Docker, Podman; orchestration: Kubernetes (EKS), ECS</td></tr>
+      <tr><td>IaC</td><td>Terraform, CloudFormation, Pulumi, Ansible (config mgmt)</td></tr>
+      <tr><td>Static analysis</td><td>SonarQube, Checkstyle, SpotBugs, ESLint, <code>tfsec</code>, <code>checkov</code></td></tr>
+      <tr><td>Secrets</td><td>HashiCorp Vault, AWS Secrets Manager / Parameter Store</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================ -->
+<h2>Architectures from an implementation &amp; maintenance perspective</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Layered (clean)</span>
+  <p>Splits a monolithic system into layers; each layer is responsible for some part of the application; a layer uses the services of the layer below. Layers can be <em>open</em> or <em>closed</em>; open layers can be skipped.</p>
+  <ul>
+    <li><strong>Presentation</strong> &mdash; closed, UI / client.</li>
+    <li><strong>Business</strong> &mdash; closed, business logic.</li>
+    <li><strong>Service</strong> &mdash; open, shared components of the business layer (auth, logging).</li>
+    <li><strong>Persistence</strong> &mdash; closed, DB access; the Repository pattern lives here.</li>
+    <li><strong>Database</strong> &mdash; closed, pure DB layer.</li>
+  </ul>
+  <p>Pros: easy to develop (still monolith), cheap, fits short-budget projects, good when you're not sure what to use. Cons: extra overhead passing data through layers; not crash-tolerant (any part down = whole down); relatively slow startup. A layer can be deployed separately to improve scalability. e.g. e-shop.</p>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — Other architectures</span>
+  <ul>
+    <li><strong>MVC / MVP / MVVM</strong> &mdash; separate model, view, and the mediating component for clearer flow. MVC is common for multi-page web; MVP suits SPAs; MVVM is typical for Android.</li>
+    <li><strong>Client-Server</strong> &mdash; client is the UI; server processes requests, runs app logic, accesses DB. Communication always initiated by client. Can be tiered (2-tier, 3-tier with DB, more service tiers).</li>
+    <li><strong>Peer-to-Peer</strong> &mdash; every client is also a server, communicating directly. BitTorrent.</li>
+    <li><strong>Pipeline (Pipes &amp; Filters)</strong> &mdash; monolithic; works like MapReduce. Pipe = point-to-point comms; Filter = a stateless transformer (can still write to DB). Reusable; suits batch processing (bad for fast response). Unix terminal, compilers.</li>
+    <li><strong>Microkernel / Hexagonal / Component-based</strong> &mdash; monolithic core + plug-in components. Easy to extend, adapt, customise. Core has minimal functionality. Plug-ins should be independent, runtime-pluggable, possibly with their own DB. Discovery via registry. VS Code (core = text editor, plug-ins = extensions).</li>
+    <li><strong>SOA</strong> &mdash; hybrid of monolith and microservices. Separate UI(s), separately deployed services (typically 4&ndash;12), each focused on one task. <em>Often shares DB.</em> Facade layer for unified API. ACID transactions (microservices use BASE). Good for DDD without too much complexity; good when you need ACID.</li>
+    <li><strong>Microservices</strong> &mdash; high independence; each service in its own language is possible; each service does the minimum; no shared DB; data duplication is acceptable for lower coupling.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Monolith vs Microservices (PA165 Lect06)</span>
+  <h4>Monolith</h4>
+  <p>Common development model (past 20+ years). Single or small number of deployments. Application server. Single process. Components tightly coupled.</p>
+  <p><strong>Advantages:</strong> Development model matches app requirements (CRUD/MVC: Presentation &mdash; Business &mdash; Database). Single deployment archive. Easy horizontal scaling (run N copies).</p>
+  <p><strong>Problems:</strong> Adding functionality is hard. General maintenance / CVE patching. Every change requires rebuild + redeploy of the whole app. Replicated server instances take more resources. Slow startup. Often extremely large codebases &mdash; hard to understand/maintain, long onboarding, experts per part of the system, often a commitment to a particular technology (or version).</p>
+  <h4>Microservices</h4>
+  <p>A system as a collection of small, isolated services. Each service: <em>owns its data</em>, <em>independently isolated</em>, <em>scalable</em>, <em>resilient</em>, <em>self-maintained</em>. An <strong>evolution of SOA</strong>. Intuitive approach.</p>
+  <p>Interaction with other microservices is only through predefined communication interfaces (API).</p>
+  <p><strong>Organisation:</strong> teams segregated according to the architecture; each team responsible for one or a small set of services; structured around business goals; teams should be self-maintained (dev, test, FE&hellip;); one team should not have access/knowledge of other teams' services.</p>
+  <p><strong>Isolation:</strong> ownership of resources; data only via the API; the service must act as an external component; loosely coupled; virtual addresses; scaling, load-balancing; resiliency.</p>
+  <p>Underlying technology may differ &mdash; different languages, runtimes, frameworks, versions per service.</p>
+  <p><strong>Law of Demeter:</strong> microservice must communicate with others; principle of least knowledge &mdash; each unit knows only "close" units; only talk to your friends.</p>
+  <p><strong>Single responsibility:</strong> "micro" doesn't necessarily mean physically small &mdash; it means <em>scope of responsibility</em>. SRP &mdash; a microservice should have only one reason to change. Unix philosophy.</p>
+  <p><strong>API options:</strong> HTTP &amp; REST, Apache Kafka, gRPC, GraphQL, AMQP, MQTT, JMS&hellip;</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Spring Framework / IoC / DI (PA165 Lect02)</span>
+  <p>Spring is an application framework on top of the Java language (and not only) that provides a <strong>dependency injection container</strong> for the Java platform. Originally by Rod Johnson (2002). Provides a comprehensive programming and configuration model for modern Java-based enterprise applications.</p>
+  <h4>Inversion of Control (IoC) / Dependency Injection (DI)</h4>
+  <p>Spring container uses the IoC design pattern (a.k.a. Dependency Injection):</p>
+  <ul>
+    <li>Objects define their dependencies (e.g. via constructor arguments).</li>
+    <li>The container <em>injects</em> those dependencies when it creates beans.</li>
+  </ul>
+  <p>Three ways to configure metadata:</p>
+  <ul>
+    <li><strong>XML</strong> &mdash; pure declarative; can change config without code; but verbose, hard to maintain, refactoring problems.</li>
+    <li><strong>Annotations</strong> &mdash; <code>@Component, @Service, @Repository, @Controller, @RestController, @Autowired, @Required</code>; also JSR-330 <code>@Named, @Inject, @Qualifier</code>; <code>@Resource, @PersistenceContext, @PersistenceUnit</code>.</li>
+    <li><strong>Java Config</strong> &mdash; <code>@Configuration, @Bean, @ComponentScan, @PropertySource, @Import</code>; each <code>@Bean</code> method is evaluated just once.</li>
+  </ul>
+  <h4>Aspect-Oriented Programming (AOP)</h4>
+  <p>Spring AOP provides cross-cutting concerns (logging, transactions, security) declaratively. You define an aspect once (e.g. log entry/exit of all <code>@Service</code> methods) without modifying each method.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — broader architectural patterns to know</span>
+  <dl class="def-list">
+    <dt>Hexagonal / Ports &amp; Adapters (Alistair Cockburn)</dt>
+    <dd>Domain core has no dependencies on infrastructure. The core exposes <em>ports</em> (interfaces); concrete infrastructure (DB, REST, queue) is connected via <em>adapters</em> that implement the ports. Lets you swap the DB or the HTTP framework without touching the domain. Same principle as Clean Architecture (Uncle Bob), Onion Architecture &mdash; different names, same idea.</dd>
+
+    <dt>CQRS (Command Query Responsibility Segregation)</dt>
+    <dd>Split the model used for reads from the model used for writes. Reads can be denormalised and fast; writes can be validated and consistent. Often paired with event sourcing.</dd>
+
+    <dt>Event-driven architecture</dt>
+    <dd>Components communicate by publishing/subscribing to events on a broker (Kafka, RabbitMQ, EventBridge). Producers don't know consumers; the broker decouples. Very flexible but harder to reason about.</dd>
+
+    <dt>Serverless / FaaS</dt>
+    <dd>Code runs in short-lived functions (AWS Lambda, Azure Functions). Scaling and infrastructure managed by the platform. Best for spiky workloads and glue code.</dd>
+
+    <dt>Modular monolith</dt>
+    <dd>Single deploy, but internally organised as decoupled modules with clear interfaces. Easier than microservices, retains most architectural benefits. A pragmatic choice when team size doesn't justify microservice overhead.</dd>
+  </dl>
+  <p><strong>Choosing</strong>: monolith for &lt;10 devs and simple domain; modular monolith / SOA for medium org; microservices when team count, deploy frequency, or per-service scaling demand it. <em>Don't start with microservices.</em></p>
+</div>
+
+<!-- ============================================ -->
+<h2>CI/CD technologies</h2>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Why CI/CD (PA165 Lect09)</span>
+  <ul>
+    <li>Releasing more frequently turns out to produce more stable software.</li>
+    <li>Solves the "it works on my machine" problem.</li>
+    <li>Automates testing and deployment of the software.</li>
+  </ul>
+  <p>Responsibility for CI/CD: <strong>DevOps</strong> &mdash; "DevOps combines development (Dev) and operations (Ops) to increase the efficiency, speed, and security of software development and delivery compared to traditional processes." (GitLab)</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — DevOps activities</span>
+  <ol>
+    <li><strong>Manage</strong> &mdash; manage and configure the infrastructure required to support your applications.</li>
+    <li><strong>Plan</strong> &mdash; organize the work that needs to be done, prioritize it, track completion.</li>
+    <li><strong>Create</strong> &mdash; write, design, develop and securely manage code and project data.</li>
+    <li><strong>Verify</strong> &mdash; ensure that code works correctly and adheres to quality standards &mdash; ideally with automated testing.</li>
+    <li><strong>Package</strong> &mdash; package applications and dependencies, manage containers, build artifacts.</li>
+    <li><strong>Release</strong> &mdash; deploy the software to end users.</li>
+    <li><strong>Monitor</strong> &mdash; track performance metrics and errors to reduce severity and frequency of incidents.</li>
+    <li><strong>Secure</strong> &mdash; check for vulnerabilities through static and dynamic tests, fuzz testing, and dependency scanning.</li>
+    <li><strong>Govern</strong> &mdash; manage security vulnerabilities, policies, and compliance across the organization.</li>
+  </ol>
+  <p>DevOps vs CI/CD: <em>CI/CD is a set of development practices that enable rapid and reliable delivery of code changes. DevOps is a collection of ideas, practices, processes, and technologies that allow development and operations to work together to streamline product development.</em></p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — The three "CD"s</span>
+  <dl class="def-list">
+    <dt>Continuous Integration (CI)</dt>
+    <dd>A process that provides rapid feedback on the consistency and quality of code to all team members. Integrate code in the main branch as fast as possible. Automate code integration and unit testing. <strong>Unit tests play a key role</strong> (state testing &amp; interaction testing).</dd>
+
+    <dt>Continuous Delivery (CD)</dt>
+    <dd>Automation of the software-delivery process. Deployment pipelines automate testing of deployed artefacts. <strong>Integration tests play a key role</strong> (verify end-to-end behaviour). Every action <em>up to</em> deployment to production.</dd>
+
+    <dt>Continuous Deployment (CD)</dt>
+    <dd>Automation of the process that deploys the application <em>after</em> tests and CI/CD have passed. Manages the process of releasing the system to different users. Very strict checks about what can be released &mdash; it goes into production. Companies may still prefer "manual" steps for the final deploy step.</dd>
+  </dl>
+</div>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO — short definitions</span>
+  <ul>
+    <li><strong>Continuous integration</strong> &mdash; we regularly build the resulting system (with small, simple changes), and automatically test the result.</li>
+    <li><strong>Continuous delivery</strong> &mdash; we regularly build the system so it <em>could</em> be released immediately, and automatically test the result.</li>
+    <li><strong>Continuous deployment</strong> &mdash; we regularly deliver, automatically test the result.</li>
+    <li><strong>Regression tests</strong> &mdash; run after changes to detect unwanted effects.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Pull Requests workflow</span>
+  <ol>
+    <li>Developer creates a task / feature branch.</li>
+    <li>Once done with coding, developer pushes the dedicated local branch to the public repository.</li>
+    <li>Developer creates a pull request.</li>
+    <li>Team members review the code and provide feedback.</li>
+    <li>Once approved, the project maintainer merges the changes to the target branch.</li>
+  </ol>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Branching strategies</span>
+  <dl class="def-list">
+    <dt>Centralized workflow</dt>
+    <dd>Main branch only. Easier transition from SVN. Users don't need to change their workflow.</dd>
+    <dt>Feature Branch workflow</dt>
+    <dd>Feature development isolated in feature branches; pull request for discussing the changes. Master branch always holds stable code.</dd>
+    <dt>Forking workflow</dt>
+    <dd>Common in open source. Forks of the repo are created. Each user has a personal public repo. Maintainer integrates via pull requests.</dd>
+    <dt>Gitflow workflow</dt>
+    <dd>Strict branching model around releases. <code>master</code> stores official release history; <code>develop</code> serves as the integration branch for features. Plus release / hotfix branches.</dd>
+  </dl>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Pipeline anatomy</span>
+  <p>"A pipeline drives software development through building, testing and deploying code in stages. Pipelines are comprised of jobs, which define what will be done, and stages that spell out when to run the jobs."</p>
+  <ul>
+    <li><strong>Runner</strong> &mdash; an agent/server that executes each job individually.</li>
+    <li><strong>Stages</strong> &mdash; keyword that defines stages of a job (build, test, deploy). Jobs in the same stage are executed in parallel.</li>
+    <li><strong>Job</strong> &mdash; instruction that a runner has to execute.</li>
+  </ul>
+  <p>GitLab pipelines are defined in <code>.gitlab-ci.yml</code> (YAML). Scripts grouped into jobs &rarr; forming a pipeline. Stages allow parallel execution lines.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — GitLab pipeline (from PA165 slides)</span>
+<pre><code>stages:
+  - build
+  - test
+  - deploy
+
+image: alpine
+
+build_a:
+  stage: build
+  script:
+    - echo "Build A"
+
+build_b:
+  stage: build
+  script:
+    - echo "Build B"
+
+test_a:
+  stage: test
+  script:
+    - echo "Test A"
+
+test_b:
+  stage: test
+  script:
+    - echo "Test B"
+
+deploy_a:
+  stage: deploy
+  script:
+    - echo "Deploy A"
+
+deploy_b:
+  stage: deploy
+  script:
+    - echo "Deploy B"
+</code></pre>
+  <p>Variants: <strong>DAG pipeline</strong> uses <code>needs: [build_a]</code> on each job to bypass the strict stage ordering; <strong>Parent-child</strong> pipelines trigger nested <code>.gitlab-ci.yml</code> files from subdirectories using <code>trigger: include: a/.gitlab-ci.yml</code>.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Runners &amp; common properties</span>
+  <p><strong>GitLab Runner</strong> &mdash; separate project running on a different machine than GitLab CI. Picks up jobs and reports back. Executors: shell, docker, ssh&hellip; Types: <em>shared</em> (per group) and <em>dedicated</em> (per project).</p>
+  <p>Common job properties:</p>
+  <ul>
+    <li><code>when</code> &mdash; condition for running (e.g. <code>when: manual</code>).</li>
+    <li><code>tags</code> &mdash; run only on runners with that tag.</li>
+    <li><code>cache</code> &mdash; keep files between jobs (e.g. <code>.m2</code> Maven cache).</li>
+    <li><code>artifacts</code> &mdash; expose built artifacts (e.g. JAR).</li>
+    <li><code>environment</code> &mdash; tag the env (review / staging / prod).</li>
+    <li><code>variables</code> &mdash; access branch names, commit SHA, CI/CD variables; also user-defined.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — CI/CD environments</span>
+  <ul>
+    <li><strong>Review environment</strong> &mdash; new env for each merge request.</li>
+    <li><strong>Staging environment</strong> &mdash; near-exact replica of production for testing.</li>
+    <li><strong>Production environment</strong> &mdash; the real thing.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Docker-in-Docker (DinD)</span>
+  <p>GitLab pipelines run in their own Docker instance. To use a Docker image, run the Docker-in-Docker service (Docker containers within a Docker container).</p>
+<pre><code>default:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - docker info
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+
+build:
+  stage: build
+  script:
+    - docker build -t my-docker-image .
+    - docker run my-docker-image /script/to/run
+</code></pre>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — CI Best Practices</span>
+  <ul>
+    <li>Commit early, commit often.</li>
+    <li>Optimize pipeline stages to detect failures as early as possible.</li>
+    <li>Make builds fast and simple.</li>
+    <li>Run tests locally before adding them to the CI/CD pipeline.</li>
+    <li>Use failures to improve processes.</li>
+    <li>Build in a clean environment.</li>
+    <li>Test environment should mirror production.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — OWASP Top 10 CI/CD Security Risks</span>
+  <ol>
+    <li><strong>CICD-SEC-1: Insufficient Flow Control Mechanisms</strong> &mdash; attacker can push malicious code due to lack of approval/review.</li>
+    <li><strong>CICD-SEC-2: Inadequate Identity and Access Management</strong> &mdash; many identities + weak IAM = entry point. e.g. allowing self-registration.</li>
+    <li><strong>CICD-SEC-3: Dependency Chain Abuse</strong> &mdash; dependency confusion (publish malicious package with same name as internal one), dependency hijacking (compromise maintainer's account), typosquatting, brandjacking.</li>
+    <li><strong>CICD-SEC-4: Poisoned Pipeline Execution (PPE)</strong> &mdash; <em>Direct</em>: attacker updates pipeline config to access auth vars. <em>Indirect</em>: attacker changes artifacts used by the pipeline (inject malicious scripts).</li>
+    <li><strong>CICD-SEC-5: Insufficient PBAC (Pipeline-Based Access Controls)</strong> &mdash; malicious code abuses overly-permissive pipeline permissions to move laterally.</li>
+    <li><strong>CICD-SEC-6: Insufficient Credential Hygiene</strong> &mdash; credentials printed to console; tokens spread across the pipeline.</li>
+    <li><strong>CICD-SEC-7: Insecure System Configuration</strong> &mdash; unpatched OS running CI/CD management.</li>
+    <li><strong>CICD-SEC-8: Ungoverned Usage of 3rd Party Services</strong> &mdash; a 3rd-party service granted access to CI/CD resources widens attack surface.</li>
+    <li><strong>CICD-SEC-9: Improper Artifact Integrity Validation</strong> &mdash; unverified/unsigned artifacts flow through to deployment.</li>
+    <li><strong>CICD-SEC-10: Insufficient Logging and Visibility</strong> &mdash; no logs about the deployment process means attacks go undetected.</li>
+  </ol>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — GitLab CI ↔ Jenkins (your two main tools)</span>
+  <p>The PA165 slides focus on GitLab CI. Jenkins concepts map 1:1:</p>
+  <table>
+    <thead><tr><th>Concept</th><th>GitLab CI</th><th>Jenkins</th></tr></thead>
+    <tbody>
+      <tr><td>Config file</td><td><code>.gitlab-ci.yml</code> (YAML, in repo)</td><td><code>Jenkinsfile</code> (Groovy DSL, declarative or scripted, in repo)</td></tr>
+      <tr><td>Unit of execution</td><td>job</td><td>stage step / shell step</td></tr>
+      <tr><td>Grouping</td><td>stage</td><td>stage</td></tr>
+      <tr><td>Parallelism</td><td>Jobs in the same stage run in parallel</td><td><code>parallel { ... }</code> block inside a stage</td></tr>
+      <tr><td>Runner / executor</td><td>GitLab Runner (shared or dedicated; shell / docker / ssh executor)</td><td>Jenkins agent (Linux / Windows / Docker / Kubernetes)</td></tr>
+      <tr><td>Triggering</td><td>push, MR, schedule, manual, pipeline trigger token</td><td>SCM webhook, cron, manual, upstream-job, multi-branch scan</td></tr>
+      <tr><td>Secrets</td><td>CI/CD variables (masked, protected, file-typed)</td><td>Credentials plugin (Username/Password, SSH key, Secret text, Certificate)</td></tr>
+      <tr><td>Artifacts</td><td><code>artifacts:</code> block, expires, downloadable from UI</td><td><code>archiveArtifacts</code> step, downloadable from build page</td></tr>
+      <tr><td>Caching deps</td><td><code>cache:</code> per-job key</td><td>Workspace or stash/unstash; Pipeline-cache plugin</td></tr>
+      <tr><td>Approval gates</td><td><code>when: manual</code> on a job</td><td><code>input { message 'Deploy?' }</code> step</td></tr>
+      <tr><td>Parent-child / multi-repo</td><td><code>trigger: include:</code> a child YAML</td><td>Multi-branch pipeline, Pipeline Job in a Pipeline</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — same pipeline in Jenkins (Declarative)</span>
+<pre><code>pipeline {
+    agent { docker { image 'maven:3.9-eclipse-temurin-17' } }
+    stages {
+        stage('Build') {
+            steps { sh 'mvn -B -DskipTests package' }
+        }
+        stage('Test') {
+            steps { sh 'mvn -B test' }
+            post { always { junit '**/target/surefire-reports/*.xml' } }
+        }
+        stage('Image') {
+            steps {
+                sh 'docker build -t $REGISTRY/myapp:$GIT_COMMIT .'
+                withCredentials([usernamePassword(credentialsId: 'ecr',
+                    usernameVariable: 'U', passwordVariable: 'P')]) {
+                    sh 'echo $P | docker login -u $U --password-stdin $REGISTRY'
+                    sh 'docker push $REGISTRY/myapp:$GIT_COMMIT'
+                }
+            }
+        }
+        stage('Deploy to staging') {
+            steps {
+                sh 'terraform -chdir=infra/staging apply -auto-approve ' +
+                   '-var image_tag=$GIT_COMMIT'
+            }
+        }
+        stage('Deploy to prod?') {
+            steps {
+                input message: 'Promote to production?', ok: 'Deploy'
+                sh 'terraform -chdir=infra/prod apply -auto-approve ' +
+                   '-var image_tag=$GIT_COMMIT'
+            }
+        }
+    }
+    post {
+        failure { slackSend channel: '#deploys', message: "Build ${env.BUILD_NUMBER} failed" }
+    }
+}
+</code></pre>
+  <p>Same shape as the GitLab YAML above: stages run in order; a manual <code>input</code> gates production; credentials injected at runtime; Terraform handles the actual deploy.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Choosing the appropriate programming language</h2>
+
+<div class="block warn">
+  <span class="block-tag">NOTE</span>
+  <p>The repo doesn't have a dedicated section on language choice, and PA165 (by definition) advocates for Java. The exam likely expects you to reason about <em>trade-offs</em>, not name a winner.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — language-choice criteria</span>
+  <dl class="def-list">
+    <dt>Problem fit</dt>
+    <dd>What is the language designed for? Python for data + glue. Java for business logic, large teams. Go for network services and CLIs. Rust for systems code with high perf + safety. JS/TS for frontend (and increasingly backend with Node/Deno/Bun). C# in Microsoft ecosystems. C/C++ when you need every cycle.</dd>
+
+    <dt>Team familiarity</dt>
+    <dd>The "best" language your team doesn't know is worse than the "OK" language they know. Onboarding new hires also matters.</dd>
+
+    <dt>Ecosystem / libraries</dt>
+    <dd>Mature libraries for your domain? Active community? Long-term security maintenance?</dd>
+
+    <dt>Performance requirements</dt>
+    <dd>JVM/CLR/Go are fast enough for almost anything. Native (Rust/C++) only when measurements demand it. Python/Ruby are productive but slow per-CPU.</dd>
+
+    <dt>Operational characteristics</dt>
+    <dd>Startup time (Lambda cold-starts hurt Java without GraalVM Native Image); memory footprint; runtime dependencies; observability tooling.</dd>
+
+    <dt>Type system</dt>
+    <dd>Static typing catches bugs at compile time and aids large-team refactoring (Java, TypeScript, Go, Rust, Kotlin). Dynamic typing is faster to prototype (Python, Ruby).</dd>
+
+    <dt>Tooling</dt>
+    <dd>Build tools (Maven/Gradle vs npm vs Cargo), IDE support, profilers, debuggers, formatters.</dd>
+
+    <dt>Hiring market</dt>
+    <dd>You will lose people. Esoteric languages limit your hiring pool.</dd>
+
+    <dt>Existing infra / company standards</dt>
+    <dd>If everything else in the org is Java/Spring, a Haskell service is going to be lonely at 3am during incident response.</dd>
+  </dl>
+</div>
+
+<div class="block intuition">
+  <span class="block-tag">INTUITION</span>
+  <p>The decision matrix usually has three winners depending on context:</p>
+  <ol>
+    <li><strong>"Boring enterprise" backends</strong> &mdash; Java/Kotlin/C#. Mature, stable, huge talent pool, great DB ecosystem.</li>
+    <li><strong>Cloud-native / containers / CLIs</strong> &mdash; Go. Small binaries, fast startup, good concurrency.</li>
+    <li><strong>System-level / performance-critical</strong> &mdash; Rust (modern choice) or C++ (legacy).</li>
+  </ol>
+  <p>Then a special case: <strong>data / ML</strong> &mdash; Python. And <strong>frontend</strong> &mdash; TypeScript by default.</p>
+</div>
+
+<!-- ============================================ -->
+<h2>Persistence &amp; ORM</h2>
+
+<div class="block from-repo">
+  <span class="block-tag">FROM REPO (1_programovani)</span>
+  <p>Persistence deals with retaining data between runs / restarts / client requests.</p>
+  <ul>
+    <li><strong>Relational databases</strong> &mdash; the most common way to store data. Data is structured into tables of columns; a row = a record. Relations via FKs. SQL for manipulation. (Postgres, MySQL, SQLite.) Widely supported in languages. Beware SQL injection (e.g. Rust <code>sqlx</code>). When using SQL in apps, prefer Repository / DAO pattern, or CQRS.</li>
+    <li><strong>Object-Relational Mapping (ORM)</strong> &mdash; maps your object model to the relational DB. Pro: no direct SQL, code is (should be) DB-agnostic. Con: less control over the query, complex queries become similarly complex in ORM, performance can suffer. (JS/Prisma, Rust/Diesel, Java/Hibernate.)</li>
+    <li><strong>Filesystem</strong> &mdash; good for blobs (images, PDFs). Make sure permissions are correct.</li>
+    <li><strong>NoSQL</strong> &mdash; alternative to relational; for unstructured data; better scalability and flexibility; consistency can be an issue (duplication for speed). (MongoDB, Cassandra.)</li>
+    <li><strong>Caching</strong> &mdash; temporarily storing frequently-used data / op results. RAM-level, in front of DB, in front of server. (Redis, nginx.)</li>
+  </ul>
+  <p><strong>DAO</strong> = Data Access Object &mdash; abstracts access to DB/persistence; lets you swap the persistence layer without touching other layers; makes business logic easier to test; usually one per entity; CRUD.</p>
+  <p><strong>DTO</strong> a.k.a. Value Object &mdash; Data Transfer Object &mdash; encapsulates data for transport between layers.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — RDBMs in Java (PA165 Lect07-08)</span>
+  <p>We need to store/retrieve data. Options:</p>
+  <ul>
+    <li><strong>JDBC</strong> &mdash; runs pure SQL via a JDBC driver.</li>
+    <li><strong>Object-Relational Mapping (ORM)</strong> &mdash; JPA / Hibernate.</li>
+    <li><strong>iBATIS / MyBatis</strong> &mdash; SQL Map.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — ORM concept</span>
+  <p>Object Relational Mapping = mapping classes (OOP) to relational DBs.</p>
+  <ul>
+    <li>Data type mapping (e.g. on Postgres: <code>Long &rarr; int8</code>, <code>Integer &rarr; int4</code>, <code>String &rarr; varchar(255)</code>).</li>
+    <li>Query syntax.</li>
+    <li>Simplifies joins.</li>
+    <li><strong>JBoss Hibernate</strong> is the de-facto standard ORM library in Java.</li>
+  </ul>
+  <h4>JPA &mdash; Java Persistence API</h4>
+  <p>Based on Hibernate. Hibernate <em>implements</em> JPA. JPA 2.2 was the last in Java EE 8; Jakarta Persistence 3.x (renamed packages from <code>javax.persistence.*</code> to <code>jakarta.persistence.*</code>) is current. Spring 6 / Spring Boot 3 adopts JPA 3.1.</p>
+</div>
+
+<div class="block example">
+  <span class="block-tag">EXAMPLE — Native SQL vs JPA Hello World</span>
+<pre class="lang-sql"><code>-- Native SQL (JDBC)
+CREATE TABLE employee (id int PRIMARY KEY, name varchar,
+                       gender varchar, monthlySalary int);
+INSERT INTO employee(id, name, gender, monthlySalary)
+       VALUES (1, 'LukeSkywalker', 'male', 18000);
+SELECT * FROM employee WHERE id = 1;
+DELETE FROM employee WHERE id = 1;
+DROP TABLE employee;</code></pre>
+<pre><code>// JPA equivalent
+@Entity
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+    private Integer monthlySalary;
+    // non-parametric constructor required
+    public Employee() {}
+    // getters/setters...
+}
+
+EntityManager em = emf.createEntityManager();
+em.getTransaction().begin();
+em.persist(new Employee("LukeSkywalker", Gender.MALE, 18000));
+em.getTransaction().commit();
+Employee luke = em.find(Employee.class, 1L);</code></pre>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Entity essentials</span>
+  <ul>
+    <li><code>@Entity</code>, <code>@Id</code>; non-parametric constructor required.</li>
+    <li><code>EntityManager#persist</code> &mdash; insert executed as late as possible; should run inside a transaction.</li>
+    <li><code>EntityManager#find</code> &mdash; always one instance of entity identity per EntityManager / PersistenceContext.</li>
+    <li><strong>EntityManager vs EntityManagerFactory (EMF)</strong> &mdash; EntityManager is lightweight, <em>not</em> thread-safe; EMF is heavyweight, thread-safe, usually one per application.</li>
+    <li><strong>Auto-generated keys</strong> &mdash; IDENTITY column or SEQUENCE. IDENTITY requires INSERT when <code>persist</code> is called.</li>
+    <li><strong>Enum mapping</strong> &mdash; ORDINAL (default; brittle if you reorder the enum) or STRING (recommended).</li>
+    <li><strong>Temporal types</strong> &mdash; old <code>java.util.Date</code> / <code>java.sql.Date</code> with <code>@Temporal(DATE/TIME/TIMESTAMP)</code>; modern <code>java.time</code> (LocalDate, LocalDateTime, Instant) preferred.</li>
+    <li><strong>equals / hashCode</strong> &mdash; Java collections require them; choose ID equivalence, instance equivalence, or business equivalence. Use <code>instanceof</code> instead of <code>getClass()</code>; use getters on the "other" object, not direct field access.</li>
+    <li><strong>Validation</strong> &mdash; Bean Validation: <code>@NotNull</code>, <code>@Min</code>, <code>@Past</code>&hellip;</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Persistence Context</span>
+  <p>Set of managed entity instances in memory. Annotation: <code>jakarta.persistence.PersistenceContext</code>.</p>
+  <blockquote>"A persistence context is a set of managed entity instances in which for any persistent entity identity there is a unique entity instance. Within the persistence context, the entity instances and their lifecycle are managed by the entity manager."</blockquote>
+  <h4>Entity states</h4>
+  <ul>
+    <li><strong>New / transient</strong> &mdash; just created, not in DB.</li>
+    <li><strong>Managed</strong> &mdash; in persistence context; changes are tracked and flushed.</li>
+    <li><strong>Detached</strong> &mdash; was managed; persistence context closed.</li>
+    <li><strong>Removed</strong> &mdash; marked for deletion.</li>
+  </ul>
+  <p>For detached entities, reattach with <code>find()</code> or <code>merge()</code>.</p>
+  <h4>Database synchronization</h4>
+  <ul>
+    <li>On <code>flush()</code>.</li>
+    <li>On transaction <code>commit()</code>.</li>
+    <li>Whenever Hibernate decides it's important (e.g. SELECT on a modified table).</li>
+    <li>Flush mode: <code>AUTO</code> vs <code>COMMIT</code> &mdash; performance trade-off.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Relationships</span>
+  <p>Cardinalities: <code>@OneToOne</code>, <code>@OneToMany</code>, <code>@ManyToOne</code>, <code>@ManyToMany</code>. Each can be unidirectional or bidirectional.</p>
+  <h4>Owning side vs Inverse side</h4>
+  <ul>
+    <li>Unidirectional has only an owning side.</li>
+    <li>Bidirectional has both.</li>
+    <li><strong>Owning side dictates propagation to the database.</strong></li>
+    <li>The owning side is the one with the FK in DB.</li>
+    <li>The inverse side must use <code>mappedBy</code>.</li>
+  </ul>
+  <h4>Cascading</h4>
+  <p>"Use of the cascade annotation element may be used to propagate the effect of an operation to associated entities. The cascade functionality is most typically used in parent-child relationships."</p>
+  <h4>Fetch profiles</h4>
+  <ul>
+    <li><code>LAZY</code> (default for <code>@OneToMany</code>, <code>@ManyToMany</code>) &mdash; load on access.</li>
+    <li><code>EAGER</code> (default for <code>@ManyToOne</code>, <code>@OneToOne</code>) &mdash; load with parent.</li>
+    <li><strong>N+1 problem</strong> &mdash; lazy loading inside a loop fires one query per element. Mitigate with <code>JOIN FETCH</code>, fetch profiles, or DTO projections. In production <strong>monitor your SQL query count</strong>.</li>
+  </ul>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Java Persistence Query Language (JPQL)</span>
+  <p>Similar to SQL but operates on entities, not tables.</p>
+<pre><code>// Find employees with salary between two values
+SELECT e FROM Employee e WHERE e.monthlySalary BETWEEN :min AND :max
+
+// Multiple scalars — returns Object[]
+SELECT e.name, d.name FROM Employee e JOIN e.department d
+
+// Constructor expression — build a DTO directly in the query
+SELECT NEW com.acme.EmployeeDto(e.name, e.monthlySalary) FROM Employee e
+
+// JOIN FETCH — eager-load a collection in one query
+SELECT e FROM Employee e JOIN FETCH e.skills WHERE e.id = :id
+</code></pre>
+  <p>Other constructs: <code>BETWEEN</code>, <code>IS EMPTY</code>, <code>LIKE</code>, <code>IN</code>, <code>DISTINCT</code>, <code>GROUP BY</code>, aggregations (<code>SUM</code>, <code>COUNT</code>&hellip;).</p>
+  <p>Caveat: <code>JOIN FETCH</code> can't be used multiple times with <code>List</code>s in a single query.</p>
+  <h4>Criteria API</h4>
+  <p>Safer than JPQL with regard to type checking. Useful for dynamic queries (e.g. searching by optional fields).</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — DAO &amp; schema</span>
+  <h4>Data Access Object</h4>
+  <ul>
+    <li>One DAO per Entity.</li>
+    <li>CRUD operations.</li>
+    <li>No transaction demarcation (do that one layer up).</li>
+    <li><code>@Repository</code> annotation in Spring &mdash; enables <strong>exception translation</strong> (SQLException &rarr; Spring's <code>DataAccessException</code> hierarchy).</li>
+  </ul>
+  <h4>Schema creation</h4>
+  <p><code>hibernate.hbm2ddl.auto</code> values:</p>
+  <ul>
+    <li><code>create</code> &mdash; drop and recreate on each startup.</li>
+    <li><code>create-drop</code> &mdash; create on start, drop on shutdown.</li>
+    <li><code>update</code> &mdash; add missing things; never drop.</li>
+    <li><code>validate</code> &mdash; check schema matches but don't modify.</li>
+    <li><code>none</code> &mdash; do nothing.</li>
+  </ul>
+  <p><strong>In production:</strong> use <code>validate</code> (or <code>none</code>) and manage schema via Flyway/Liquibase migrations.</p>
+</div>
+
+<div class="block lectures">
+  <span class="block-tag">FROM LECTURES — Pros &amp; cons of ORM</span>
+  <h4>Advantages</h4>
+  <ul>
+    <li>"Clean code" &mdash; easy to store/retrieve data in Java.</li>
+    <li>Less code &amp; less duplication.</li>
+    <li>Easier to switch DB engines.</li>
+  </ul>
+  <h4>Disadvantages</h4>
+  <ul>
+    <li>Hard to master all aspects (cascading, concurrency, performance tuning, the <strong>N+1 problem</strong>).</li>
+    <li>Performance.</li>
+    <li>Introduces complicated bugs:
+      <ul>
+        <li><code>equals()</code> / <code>hashCode()</code>.</li>
+        <li>Cascading and related data removal/creation.</li>
+        <li>Concurrent bugs (many operations aren't atomic).</li>
+      </ul>
+    </li>
+  </ul>
+  <h4>Topics not covered in the lectures (but worth knowing)</h4>
+  <p>Bean validation, locking and concurrency, caching, inheritance, legacy mapping strategies (shared keys), DB refactoring strategies.</p>
+</div>
+
+<div class="block added">
+  <span class="block-tag">ADDED — ORMs you'll meet elsewhere</span>
+  <table>
+    <thead><tr><th>Language</th><th>Main ORMs</th></tr></thead>
+    <tbody>
+      <tr><td>Java</td><td>Hibernate (JPA), EclipseLink, MyBatis</td></tr>
+      <tr><td>.NET/C#</td><td>Entity Framework Core, Dapper (micro-ORM)</td></tr>
+      <tr><td>Python</td><td>SQLAlchemy (proper ORM), Django ORM, Peewee</td></tr>
+      <tr><td>Node/TS</td><td>Prisma (schema-first), TypeORM, Sequelize, Drizzle</td></tr>
+      <tr><td>Go</td><td>GORM, sqlc (codegen from SQL, not strictly ORM)</td></tr>
+      <tr><td>Rust</td><td>Diesel (compile-time-checked), SeaORM, SQLx (typed queries, not ORM)</td></tr>
+    </tbody>
+  </table>
+  <p>Modern trend: <strong>compile-time-checked SQL</strong> (sqlc, SQLx, jOOQ in Java) is the middle ground between raw SQL and full ORM &mdash; you keep the SQL but get typed query objects.</p>
+</div>
+
+<div class="block warn">
+  <span class="block-tag">EXAM TIP — common ORM gotchas</span>
+  <ul>
+    <li>Never use <code>hbm2ddl.auto=update</code> in production &mdash; migrations should be explicit.</li>
+    <li>Default <code>FetchType.EAGER</code> on <code>@ManyToOne</code> is a perf trap; switch to <code>LAZY</code>.</li>
+    <li><code>Open Session In View</code> anti-pattern lets the persistence context leak into the controller &rarr; surprise SQL during JSON serialization.</li>
+    <li>Always set <code>spring.jpa.open-in-view=false</code> in Spring Boot.</li>
+    <li>Don't return JPA entities from REST endpoints &mdash; use DTOs.</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>Practical example &mdash; from code to production</h2>
+
+<div class="block added">
+  <span class="block-tag">ADDED — end-to-end Spring Boot delivery</span>
+  <p>A new feature ships from laptop to prod in your typical setup:</p>
+  <ol>
+    <li><strong>Local dev</strong> &mdash; IntelliJ, Spring Boot devtools, Testcontainers Postgres. <code>mvn test</code>.</li>
+    <li><strong>Feature branch</strong> &mdash; push, open Merge Request in GitLab.</li>
+    <li><strong>Pipeline triggers</strong> on the MR:
+      <ul>
+        <li><code>build</code> &mdash; <code>mvn -B -DskipTests package</code>.</li>
+        <li><code>test</code> &mdash; <code>mvn verify</code>; unit + integration with Testcontainers; JaCoCo coverage; SonarQube quality gate.</li>
+        <li><code>image</code> &mdash; <code>spring-boot:build-image</code> &rarr; push to GitLab Container Registry.</li>
+        <li><code>review</code> &mdash; deploy ephemeral env to k8s namespace named after the MR; auto-destroyed on merge or after 24h.</li>
+      </ul>
+    </li>
+    <li><strong>Review</strong> &mdash; 2 approvals + green pipeline = merge to <code>main</code>.</li>
+    <li><strong>Main branch</strong> pipeline:
+      <ul>
+        <li>Rebuild image, retag with semver from <code>git describe</code>.</li>
+        <li>Push to ECR.</li>
+        <li>Terraform plan against staging (<code>module.api.image_tag = "v1.4.2"</code>).</li>
+        <li>Manual approval to apply.</li>
+        <li>Apply &rarr; ECS deploys new task definition, rolling update with health checks.</li>
+        <li>Synthetic canary checks the new env; promote to prod if green.</li>
+      </ul>
+    </li>
+    <li><strong>Post-deploy</strong> &mdash; CloudWatch alarms on p99 latency, error rate; logs &amp; traces flow to OpenSearch/X-Ray; on alarm, PagerDuty pages on-call.</li>
+  </ol>
+</div>
+
+<div class="block watch">
+  <span class="block-tag">WATCH</span>
+  <ul>
+    <li><a href="https://www.youtube.com/watch?v=GsemAtulurc" target="_blank">CI/CD in 100 seconds &mdash; Fireship</a></li>
+    <li><a href="https://www.youtube.com/watch?v=Tk6n_BbzKxM" target="_blank">JPA &amp; Hibernate explained &mdash; Marco Codes</a></li>
+    <li><a href="https://www.youtube.com/watch?v=mEBNs0RTczs" target="_blank">Spring vs Spring Boot &mdash; freeCodeCamp</a></li>
+    <li><a href="https://www.youtube.com/watch?v=lL_j7N-7yKI" target="_blank">DevOps in 5 minutes &mdash; ByteByteGo</a></li>
+    <li><a href="https://www.youtube.com/watch?v=j6ow-UemzBc" target="_blank">N+1 problem visualized &mdash; Marco Codes</a></li>
+  </ul>
+</div>
+
+<div class="footnote">
+  Sources: <a href="../1_programovani_a_softwarovy_vyvoj.md">1_programovani_a_softwarovy_vyvoj.md</a> + <code>materialy/PA165</code> (Lect01 Intro, Lect02 Spring, Lect06 Microservices, Lect07-08 Persistence, Lect09 CI/CD). <span class="tag from-repo">FROM REPO</span> = szmgr .md; <span class="tag lectures">FROM LECTURES</span> = PA165 slides; <span class="tag added">ADDED</span> = mine.
+</div>
+
+</main>
+
+<aside class="toc">
+  <h4 class="toc-title">On this page</h4>
+  <ol></ol>
+</aside>
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>
