@@ -41,6 +41,24 @@
     <div class="q-source">Source repo: <a href="https://www.fi.muni.cz/studies/fe-mgr/swe2021.html">fi.muni.cz/studies/fe-mgr/swe2021</a></div>
   </section>
 
+  <h2>Your progress</h2>
+  <p>Click the small <code>○</code> pill next to any section heading to cycle through <strong>studying → review → mastered</strong>. The bars below summarise per question.</p>
+  <div id="progress-dashboard">
+    <p style="color: var(--fg-muted); font-size: 13px;">Loading…</p>
+  </div>
+
+  <h2>Study tools</h2>
+  <div class="block intuition">
+    <span class="block-tag">HOW IT WORKS</span>
+    <p>The portal stores your progress and notes in your browser (<code>localStorage</code>) — nothing leaves your machine. Three things you can do on any page:</p>
+    <ul>
+      <li><strong>Mark progress on a section</strong> — hover any <code>h2</code> heading and click the small pill on its right to cycle: <code>○</code> Not started → <code>◐</code> Studying → <code>⚠</code> Review → <code>✓</code> Mastered. Counts roll up to the dashboard above.</li>
+      <li><strong>Add a note to a section</strong> — hover the heading and click the <code>notes</code> button next to the pill. An inline editor appears below the heading; auto-saves when you click out. A purple-bordered <code>notes</code> button means there's a saved note there.</li>
+      <li><strong>Write a page-wide note</strong> — the floating <strong>notes</strong> button in the bottom-right of every page opens a textarea for general thoughts about the question. Press <kbd>n</kbd> on any page (outside an input) to toggle it.</li>
+    </ul>
+    <p>From the page-notes panel you can <strong>Export JSON</strong> (copies all your progress + notes to clipboard for backup), <strong>Import JSON</strong> (paste a previous export to restore), or <strong>Reset</strong> (wipe everything). Data is per-origin, so progress on <code>localhost:8765</code> and <code>your-username.github.io</code> are independent — export from one, import into the other if you switch.</p>
+  </div>
+
   <h2>How to use this portal</h2>
 
   <div class="block from-repo">
@@ -232,5 +250,6 @@
 </div>
 
 <script src="assets/script.js"></script>
+<script src="assets/study.js"></script>
 </body>
 </html>
